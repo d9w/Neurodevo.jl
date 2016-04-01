@@ -4,3 +4,6 @@
 [submodule "code/src/external/gaga"]
 	path = code/src/external/gaga
 	url = git@github.com:d9w/gaga.git
+[submodule "code/src/external/cxxopts"]
+	path = code/src/external/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
