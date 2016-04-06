@@ -1,5 +1,5 @@
 CC = g++
-SOURCES =
+SOURCES = core/Axon.cpp core/Soma.cpp core/Environment.cpp
 CFLAGS = -g -std=c++14 -Wall -Wextra -Wshadow -pedantic
 LFLAGS =
 DRAWLFLAGS = -lGL -lglut
