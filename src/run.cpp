@@ -2,6 +2,7 @@
 #include "core/config.hpp"
 #include "core/evaluator.hpp"
 #include "core/types.hpp"
+#include <random>
 
 using std::vector;
 using std::cout;
@@ -16,6 +17,8 @@ protected:
   int iter = 0;
 
 public:
+	std::random_device rd;
+
   Sample() {}
 
   bool stop() {
@@ -23,8 +26,15 @@ public:
   }
 
   void setInputs(d2* inputs) {
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
     inputs->clear();
-    inputs->push_back(vector<double> {0});
+    for (unsigned int x = 0; x < Config::X_SIZE; x++) {
+      vector<double> i;
+      for (unsigned int y = 0; y < Config::Y_SIZE; y++) {
+        i.push_back(dist(rd));
+      }
+      inputs->push_back(i);
+    }
   }
 
   void step(const d2* outputs, d2* history) {
@@ -50,6 +60,23 @@ int main(int argc, char** argv) {
   using dna_t = Types::DNAType;
 
   dna_t t;
+  t.addRandomProtein(ProteinType::input, "x");
+  t.addRandomProtein(ProteinType::input, "y");
+  t.addRandomProtein(ProteinType::input, "z");
+  t.addRandomProtein(ProteinType::input, "nt");
+  t.addRandomProtein(ProteinType::input, "comm");
+  t.addRandomProtein(ProteinType::input, "div");
+  t.addRandomProtein(ProteinType::input, "reward");
+
+  t.addRandomProtein(ProteinType::output, "nt");
+  t.addRandomProtein(ProteinType::output, "nt_t");
+  t.addRandomProtein(ProteinType::output, "f");
+  t.addRandomProtein(ProteinType::output, "f_t");
+  t.addRandomProtein(ProteinType::output, "comm");
+
+  t.randomReguls(1);
+  t.randomParams();
+
   Evaluator<Sample> eval;
   eval.evaluate(t);
   for (auto& fit : *eval.getFitnesses()) cout << fit.first << " : " << fit.second << endl;

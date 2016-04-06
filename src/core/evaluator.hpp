@@ -4,6 +4,7 @@
 #include "../external/gaga/gaga/gaga.hpp"
 #include "config.hpp"
 #include "types.hpp"
+#include "Environment.h"
 #include <random>
 
 using std::vector;
@@ -24,14 +25,14 @@ protected:
   map<string, double> fitnesses;
 
 public:
-  void evaluate(dna_t ind) {
-    //Environment env({Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE}, dna);
+  void evaluate(dna_t dna) {
+    Environment env({Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE}, dna);
+    env.set_random_connectivity(0);
     Problem problem;
     while(!problem.stop()) {
       problem.setInputs(&inputs);
 
-      /*
-      env.develop_grns(p.getReward());
+      env.develop_grns(problem.getReward());
 
       env.set_nt_concentration(inputs);
 
@@ -40,7 +41,6 @@ public:
       env.fire_ann();
 
       env.set_outputs(&outputs);
-      */
 
       problem.step(&outputs, &history);
     }

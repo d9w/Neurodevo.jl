@@ -5,7 +5,7 @@
 
 Axon::Axon(GRN inp_grn, vector<int> inp_position) {
   grn = GRN(inp_grn);
-  for (int i=0; i<Config::N_D; i++) {
+  for (unsigned int i=0; i<Config::N_D; i++) {
     position.push_back(inp_position[i]);
   }
   marked_for_deletion = false;
@@ -26,7 +26,7 @@ double Axon::fire() {
   return fire_conc;
 }
 
-void Axon::evolve(vector<double> morphogens, double soma_concentration, double soma_signal) {
+void Axon::evolve(vector<double> morphogens, double soma_concentration, double soma_signal, double reward) {
   /*
   for (int i=0; i<N_M; i++) {
     grn.proteins[i].concentration = morphogens[i];
@@ -39,6 +39,7 @@ void Axon::evolve(vector<double> morphogens, double soma_concentration, double s
                               std::exp(soma_concentration/((double)Config::AXON_MAX_NUMBER+2.0)));
   grn.setProteinConcentration("comm", ProteinType::input, soma_signal);
   grn.setProteinConcentration("div", ProteinType::input, division_conc);
+  grn.setProteinConcentration("reward", ProteinType::input, reward);
 
   grn.step(Config::GRN_EVO_STEPS);
 }

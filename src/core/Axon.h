@@ -17,7 +17,7 @@ class Axon {
   Axon(GRN grn, vector<int> position);
 
   double fire();
-  void evolve(vector<double> morphogens, double nt_concentration, double soma_concentration);
+  void evolve(vector<double> morphogens, double nt_concentration, double soma_concentration, double reward);
   int act();
   friend std::ostream& operator<<(std::ostream& out, const Axon& a);
 };

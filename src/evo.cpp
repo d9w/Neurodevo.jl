@@ -1,7 +1,6 @@
 #include "external/gaga/gaga/gaga.hpp"
 #include "external/cxxopts/src/cxxopts.hpp"
 #include "core/config.hpp"
-#include "core/evaluators.hpp"
 #include "core/types.hpp"
 
 int main(int argc, char** argv) {
