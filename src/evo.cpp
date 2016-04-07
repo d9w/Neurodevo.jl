@@ -1,3 +1,4 @@
+#define CLUSTER
 #include "external/gaga/gaga/gaga.hpp"
 #include "external/cxxopts/src/cxxopts.hpp"
 #include "core/config.hpp"
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
     ga.enableNovelty();
     ga.setMinNoveltyForArchive(Config::NOVELTY_MIN);
   }
+  ga.setSaveFolder('evos');
   ga.setVerbosity(1);
   ga.setPopSize(Config::NUM_POP);
   ga.setMutationProba(Config::MUTATION_RATE);
