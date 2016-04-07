@@ -25,10 +25,9 @@ protected:
   map<string, double> fitnesses;
 
 public:
-  void evaluate(dna_t dna) {
+  void evaluate(Problem problem, dna_t dna, int iter) {
     Environment env({Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE}, dna);
     env.set_random_connectivity(0);
-    Problem problem;
     while(!problem.stop()) {
       problem.setInputs(&inputs);
 

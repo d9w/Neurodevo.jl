@@ -217,10 +217,10 @@ void Environment::set_outputs(vector<vector<double>> *outputs) {
 }
 
 void Environment::fire_ann() {
-  std::cout << "Firing ANN ";
+  //std::cout << "Firing ANN ";
   for (auto& soma : somas) {
     if (soma.fire()) {
-      std::cout << "fired soma " << soma.id << " ";
+      //std::cout << "fired soma " << soma.id << " ";
       for (auto& axon : soma.axons) {
         auto rec_soma = soma_at(axon.position);
         if (rec_soma != NULL && rec_soma != &soma && rec_soma->position[2] != 0) {
@@ -238,7 +238,7 @@ void Environment::fire_ann() {
       }
     }
   }
-  std::cout << std::endl;
+  //std::cout << std::endl;
 }
 
 void Environment::axon_actions() {

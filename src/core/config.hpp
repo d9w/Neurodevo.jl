@@ -49,8 +49,8 @@ struct Config {
   static constexpr unsigned int GA_COLLABORATORS = 5;
   static constexpr unsigned int AXON_GA_POP = 20;
   static constexpr unsigned int SOMA_GA_POP = 20;
-  static constexpr unsigned int NUM_POP = 20;
-  static constexpr unsigned int MAX_ITER = 400;
+  static constexpr unsigned int NUM_POP = 200;
+  static constexpr unsigned int GENERATIONS = 400;
   static constexpr unsigned int TOURNAMENT_SIZE = 5;
   static constexpr double MUTATION_RATE = 0.75;
   static constexpr double MOD_MUTATION_RATE = 0.8;
@@ -58,7 +58,7 @@ struct Config {
   static constexpr double DEL_MUTATION_RATE = 0.1;
   static constexpr double CROSSOVER_RATE = 0.40;
   static constexpr unsigned int NUMBER_ELITES = 4;
-  static constexpr unsigned int GA_EVAL_STEPS = 200;
+  static constexpr unsigned int PROBLEM_EVAL_STEPS = 200;
   static constexpr double NOVELTY_MIN = 0.1;
 };
 #endif

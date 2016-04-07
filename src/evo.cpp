@@ -2,9 +2,10 @@
 #include "external/cxxopts/src/cxxopts.hpp"
 #include "core/config.hpp"
 #include "core/types.hpp"
+#include "core/evaluator.hpp"
+#include "problems/forage.hpp"
 
 int main(int argc, char** argv) {
-	using environment_t = Types::DNAType;
 	using dna_t = Types::DNAType;
 
 	std::string evaluatorName;
@@ -31,7 +32,13 @@ int main(int argc, char** argv) {
   }
 
   GAGA::GA<dna_t> ga(0, nullptr);
-  ga.setEvaluator([](auto &i) { i.fitnesses["length"] = i.dna.getProteinSize(ProteinType::regul); });
+  ga.setEvaluator([](auto &i) {
+      Forage forager(0);
+      Evaluator<Forage> eval;
+      eval.evaluate(forager, i.dna, 0);
+      for (auto& fit : *eval.getFitnesses()) i.fitnesses[fit.first] = fit.second;
+      //i.fitnesses.swap(*eval.getFitnesses());
+    });
   if (novelty) {
     ga.enableNovelty();
     ga.setMinNoveltyForArchive(Config::NOVELTY_MIN);
@@ -48,16 +55,26 @@ int main(int argc, char** argv) {
   vector<GAGA::Individual<dna_t>> pop;
   for (unsigned int i = 0; i < Config::NUM_POP; ++i) {
     dna_t t;
-    t.config.ADD_RATE = 0.10;
-    t.config.DEL_RATE = 0.10;
-    t.config.MODIF_RATE = 0.80;
-    t.addRandomProtein(ProteinType::input, "input");
-    t.addRandomProtein(ProteinType::output, "output");
+    t.addRandomProtein(ProteinType::input, "x");
+    t.addRandomProtein(ProteinType::input, "y");
+    t.addRandomProtein(ProteinType::input, "z");
+    t.addRandomProtein(ProteinType::input, "nt");
+    t.addRandomProtein(ProteinType::input, "comm");
+    t.addRandomProtein(ProteinType::input, "div");
+    t.addRandomProtein(ProteinType::input, "reward");
+
+    t.addRandomProtein(ProteinType::output, "nt");
+    t.addRandomProtein(ProteinType::output, "nt_t");
+    t.addRandomProtein(ProteinType::output, "f");
+    t.addRandomProtein(ProteinType::output, "f_t");
+    t.addRandomProtein(ProteinType::output, "comm");
+
     t.randomReguls(1);
     t.randomParams();
+
     pop.push_back(GAGA::Individual<dna_t>(t));
   }
 	ga.setPopulation(pop);
-  ga.step(10);
+  ga.step(Config::GENERATIONS);
   return 0;
 }

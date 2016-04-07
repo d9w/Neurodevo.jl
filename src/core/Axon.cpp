@@ -22,7 +22,7 @@ double Axon::fire() {
   if (nt_amount > 0.0 || nt_thresh > 0.0) {
     fire_conc =  (nt_amount - nt_thresh)/(nt_amount + nt_thresh);
   }
-  std::cout << "Transmitting: " << fire_conc << ", " << nt_amount << ", " << nt_thresh;
+  //std::cout << "Transmitting: " << fire_conc << ", " << nt_amount << ", " << nt_thresh;
   return fire_conc;
 }
 

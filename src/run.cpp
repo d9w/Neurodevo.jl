@@ -1,5 +1,6 @@
 #include "external/cxxopts/src/cxxopts.hpp"
 #include "core/config.hpp"
+#include "problems/forage.hpp"
 #include "core/evaluator.hpp"
 #include "core/types.hpp"
 #include <random>
@@ -14,12 +15,15 @@ public:
   using d2 = vector<vector<double>>;
 
 protected:
-  int iter = 0;
+  int iter;
 
 public:
-	std::random_device rd;
+  std::mt19937 rd;
 
-  Sample() {}
+  Sample(int seed) {
+    rd = mt19937(seed);
+    iter = 0;
+  }
 
   bool stop() {
     return (iter > 10);
@@ -77,7 +81,8 @@ int main(int argc, char** argv) {
   t.randomReguls(1);
   t.randomParams();
 
-  Evaluator<Sample> eval;
-  eval.evaluate(t);
+  Forage forager(0);
+  Evaluator<Forage> eval;
+  eval.evaluate(forager, t, 0);
   for (auto& fit : *eval.getFitnesses()) cout << fit.first << " : " << fit.second << endl;
 }
