@@ -19,7 +19,7 @@ public:
 protected:
   int x;
   int y;
-  int tsteps;
+  unsigned int tsteps;
   d2 food;
   Robot robot;
   std::mt19937 rand_engine;
@@ -47,7 +47,7 @@ public:
     inputs->clear();
     inputs->push_back(vector<double> (Config::X_SIZE, 1.0));
     // inputs[0] is an x-length row at y=0
-    for (int i = 1; i < Config::Y_SIZE; i++) inputs->push_back(vector<double> (Config::X_SIZE, 0.0));
+    for (unsigned int i = 1; i < Config::Y_SIZE; i++) inputs->push_back(vector<double> (Config::X_SIZE, 0.0));
     reward = 0.0;
     for (auto foo : nearby_food()) {
       double dist = 1.0 - (foo[0] / (double) robot.sight);
@@ -55,7 +55,7 @@ public:
       int sensor = std::floor(angle/(M_PI/Config::X_SIZE));
 
       reward = std::max(reward, dist);
-      for (int i=1; i<Config::Y_SIZE; i++) {
+      for (unsigned int i=1; i<Config::Y_SIZE; i++) {
         if ((double)i/(Config::Y_SIZE-1) < dist) {
           (*inputs)[i][sensor] = 1.0;
         }
@@ -68,11 +68,11 @@ public:
     assert(static_cast<int>(outputs->at(0).size()) == Config::X_SIZE);
     double right = 0;
     double left = 0;
-    int right_bound = std::floor(Config::X_SIZE/2.0)-1; //assume x >= 4
-    int left_bound = right_bound+2;
+    unsigned int right_bound = std::max(0, static_cast<int>(std::floor(Config::X_SIZE/2.0)-1));
+    unsigned int left_bound = std::min(right_bound+2, Config::X_SIZE);
     vector<double> fire_signature;
-    for (int i = 0; i < Config::Y_SIZE; i++) {
-      for (int j = 0; j < Config::X_SIZE; j++) {
+    for (unsigned int i = 0; i < Config::Y_SIZE; i++) {
+      for (unsigned int j = 0; j < Config::X_SIZE; j++) {
         double out = (*outputs)[i][j];
         if (j < left_bound) {
           left += out;
@@ -122,7 +122,7 @@ public:
     return (robot.life <= 0 || tsteps > Config::PROBLEM_EVAL_STEPS);
   }
 
-  const double getReward() {
+  double getReward() {
     return reward;
   }
 

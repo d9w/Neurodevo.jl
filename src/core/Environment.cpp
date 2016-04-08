@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <random>
 #include "config.hpp"
 #include "Environment.h"
 
@@ -7,7 +8,9 @@ using namespace std;
 
 Environment::Environment() {}
 
-Environment::Environment(vector<int> inp_lengths, GRN grn) {
+Environment::Environment(vector<int> inp_lengths, GRN grn, int seed) {
+
+  rand_engine = std::mt19937(seed);
 
   for (unsigned int i=0; i<Config::N_D; i++) {
     lengths.push_back(inp_lengths[i]);
@@ -53,8 +56,7 @@ Environment::Environment(vector<int> inp_lengths, GRN grn) {
   }
 }
 
-void Environment::set_random_connectivity(int seed) {
-  srand(123456+100*seed);
+void Environment::set_random_connectivity() {
   // add axons
   for (auto& soma : somas) {
     if (soma.position[2] != lengths[2]-1) {
@@ -64,23 +66,27 @@ void Environment::set_random_connectivity(int seed) {
     }
   }
 
+  std::uniform_int_distribution<int> xdist(0, Config::X_SIZE-1);
+  std::uniform_int_distribution<int> ydist(0, Config::Y_SIZE-1);
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+
   // reposition axons
   for (auto& soma : somas) {
     if (soma.position[2] != lengths[2]-1) {
-      soma.axons[0].position = {rand() % Config::X_SIZE, rand() % Config::Y_SIZE, Config::Z_SIZE-1};
-      soma.axons[1].position = {rand() % Config::X_SIZE, rand() % Config::Y_SIZE, Config::Z_SIZE-1};
-      for (unsigned int a=2; a<soma.axons.size(); a++) {
-        int x = rand() % Config::X_SIZE;
-        int y = rand() % Config::Y_SIZE;
-        if (!(x == 0 || x == Config::X_SIZE-1)) {
-          y = rand()>RAND_MAX/2.0 ? 0 : Config::Y_SIZE-1;
+      for (unsigned int a=0; a<soma.axons.size(); a++) {
+        int x = xdist(rand_engine);
+        int y = ydist(rand_engine);
+        if (a < 2) {
+          soma.axons[a].position = {x, y, Config::X_SIZE-1};
+        } else {
+          if (!(x == 0 || x == Config::X_SIZE-1)) {
+            y = dist(rand_engine) > 0.5 ? 0 : Config::Y_SIZE-1;
+          }
+          soma.axons[a].position = {x, y, 4};
         }
-        soma.axons[a].position = {x, y, 4};
-        //soma.axons[a].position = somas[rand() % somas.size()].position;
       }
     }
   }
-  srand(time(NULL));
 }
 
 void Environment::set_morphogens() {
@@ -161,7 +167,7 @@ Soma* Environment::soma_at(vector<int> position) {
   return NULL;
 }
 
-void Environment::develop_grns(double reward) {
+void Environment::develop_grns(const double reward) {
   double soma_signal;
   double soma_concentration;
   for (auto& soma : somas) {

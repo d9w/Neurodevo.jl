@@ -1,7 +1,11 @@
 #include <map>
+#include <random>
 #include "Soma.h"
 #include "types.hpp"
 //#include "Snap.h"
+
+using std::vector;
+using std::map;
 
 class Environment {
  public:
@@ -11,17 +15,18 @@ class Environment {
   vector<vector<vector<vector<double> > > > morphogens;
   vector<double> max_morphogens;
   map<vector<int>, int> soma_map;
+  std::mt19937 rand_engine;
   //PNEGraph ann_graph;
   //PUNGraph ann_pun_graph;
 
   Environment();
-  Environment(vector<int> lengths, GRN grn);
+  Environment(vector<int> lengths, GRN grn, int seed);
 
-  void set_random_connectivity(int seed);
+  void set_random_connectivity();
   void set_morphogens();
   vector<int> move_position(vector<int> position, int morph);
   Soma* soma_at(vector<int> position);
-  void develop_grns(double reward);
+  void develop_grns(const double reward);
   void set_nt_concentration(vector<vector<double> > inputs);
   void set_outputs(vector<vector<double>> *outputs);
   void fire_ann();

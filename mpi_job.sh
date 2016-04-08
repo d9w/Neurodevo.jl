@@ -10,7 +10,7 @@
 
 WORK_DIR=/tmpdir/$LOGNAME/dennis/$SLURM_JOBID
 mkdir $WORK_DIR
-cp evo $WORK_DIR
+cp src/evo $WORK_DIR
 cd $WORK_DIR
 
 module purge

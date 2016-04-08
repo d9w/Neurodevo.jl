@@ -26,8 +26,8 @@ protected:
 
 public:
   void evaluate(Problem problem, dna_t dna, int iter) {
-    Environment env({Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE}, dna);
-    env.set_random_connectivity(0);
+    Environment env({Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE}, dna, iter);
+    env.set_random_connectivity();
     while(!problem.stop()) {
       problem.setInputs(&inputs);
 

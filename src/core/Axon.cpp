@@ -28,7 +28,7 @@ double Axon::fire() {
 
 void Axon::evolve(vector<double> morphogens, double soma_concentration, double soma_signal, double reward) {
   /*
-  for (int i=0; i<N_M; i++) {
+  for (unsigned int i=0; i<Config::N_M; i++) {
     grn.proteins[i].concentration = morphogens[i];
   }
   */

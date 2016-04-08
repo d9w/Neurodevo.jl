@@ -34,9 +34,10 @@ int main(int argc, char** argv) {
 
   GAGA::GA<dna_t> ga(0, nullptr);
   ga.setEvaluator([](auto &i) {
-      Forage forager(0);
+      std::random_device rd;
+      Forage forager(rd());
       Evaluator<Forage> eval;
-      eval.evaluate(forager, i.dna, 0);
+      eval.evaluate(forager, i.dna, rd());
       for (auto& fit : *eval.getFitnesses()) i.fitnesses[fit.first] = fit.second;
       //i.fitnesses.swap(*eval.getFitnesses());
     });
@@ -44,7 +45,7 @@ int main(int argc, char** argv) {
     ga.enableNovelty();
     ga.setMinNoveltyForArchive(Config::NOVELTY_MIN);
   }
-  ga.setSaveFolder('evos');
+  ga.setSaveFolder("evos");
   ga.setVerbosity(1);
   ga.setPopSize(Config::NUM_POP);
   ga.setMutationProba(Config::MUTATION_RATE);
