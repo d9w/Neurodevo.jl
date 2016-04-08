@@ -21,7 +21,7 @@ public:
 protected:
   d2 inputs;
   d2 outputs;
-  d2 history;
+  vector<double> history;
   map<string, double> fitnesses;
 
 public:
@@ -41,11 +41,13 @@ public:
 
       env.set_outputs(&outputs);
 
-      problem.step(&outputs, &history);
+      problem.step(&outputs);
     }
+    problem.setFootprint(&history);
     problem.setFitness(&fitnesses);
   };
 
   const map<string, double> *getFitnesses() { return &fitnesses; }
+  const vector<double> *getHistory() { return &history; }
 };
 #endif

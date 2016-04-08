@@ -63,7 +63,13 @@ public:
     }
   }
 
-  void step(const d2 *outputs, d2 *history) {
+  void setFootprint(vector<double> *history) {
+    history->clear();
+    history->push_back(robot.x);
+    history->push_back(robot.y);
+  }
+
+  void step(const d2 *outputs) {
     assert(static_cast<int>(outputs->size()) == Config::Y_SIZE);
     assert(static_cast<int>(outputs->at(0).size()) == Config::X_SIZE);
     double right = 0;
@@ -83,7 +89,6 @@ public:
         fire_signature.push_back(out);
       }
     }
-    history->push_back(fire_signature);
 
     robot.move(right, left);
 

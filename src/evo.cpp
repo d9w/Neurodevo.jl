@@ -34,12 +34,11 @@ int main(int argc, char** argv) {
 
   GAGA::GA<dna_t> ga(0, nullptr);
   ga.setEvaluator([](auto &i) {
-      std::random_device rd;
-      Forage forager(rd());
+      Forage forager(0);
       Evaluator<Forage> eval;
-      eval.evaluate(forager, i.dna, rd());
+      eval.evaluate(forager, i.dna, 0);
       for (auto& fit : *eval.getFitnesses()) i.fitnesses[fit.first] = fit.second;
-      //i.fitnesses.swap(*eval.getFitnesses());
+      i.footprint.push_back(*eval.getHistory());
     });
   if (novelty) {
     ga.enableNovelty();
