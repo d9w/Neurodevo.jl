@@ -60,29 +60,14 @@ public:
   }
 };
 
-int main(int argc, char** argv) {
+int main(int, char**) {
   using dna_t = Types::DNAType;
+  Types t;
 
-  dna_t t;
-  t.addRandomProtein(ProteinType::input, "x");
-  t.addRandomProtein(ProteinType::input, "y");
-  t.addRandomProtein(ProteinType::input, "z");
-  t.addRandomProtein(ProteinType::input, "nt");
-  t.addRandomProtein(ProteinType::input, "comm");
-  t.addRandomProtein(ProteinType::input, "div");
-  t.addRandomProtein(ProteinType::input, "reward");
-
-  t.addRandomProtein(ProteinType::output, "nt");
-  t.addRandomProtein(ProteinType::output, "nt_t");
-  t.addRandomProtein(ProteinType::output, "f");
-  t.addRandomProtein(ProteinType::output, "f_t");
-  t.addRandomProtein(ProteinType::output, "comm");
-
-  t.randomReguls(1);
-  t.randomParams();
+  dna_t dna = t.random_dna();
 
   Forage forager(0);
   Evaluator<Forage> eval;
-  eval.evaluate(forager, t, 0);
+  eval.evaluate(forager, dna, 0);
   for (auto& fit : *eval.getFitnesses()) cout << fit.first << " : " << fit.second << endl;
 }
