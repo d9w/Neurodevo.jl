@@ -63,9 +63,9 @@ public:
     }
   }
 
-  void setFootprint(vector<double> *history) {
+  void setFootprint(vector<vector<double>> *history) {
     history->clear();
-    history->push_back({robot.x,robot.y});
+    history->push_back(vector<double>{robot.x,robot.y});
   }
 
   void step(const d2 *outputs) {

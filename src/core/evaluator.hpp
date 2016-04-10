@@ -21,7 +21,7 @@ public:
 protected:
   d2 inputs;
   d2 outputs;
-  vector<double> history;
+  d2 history;
   map<string, double> fitnesses;
 
 public:
