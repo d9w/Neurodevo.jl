@@ -59,6 +59,6 @@ struct Config {
   static constexpr double CROSSOVER_RATE = 0.40;
   static constexpr unsigned int NUMBER_ELITES = 4;
   static constexpr unsigned int PROBLEM_EVAL_STEPS = 200;
-  static constexpr double NOVELTY_MIN = 0.1;
+  static constexpr double NOVELTY_MIN = 5.0;
 };
 #endif

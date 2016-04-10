@@ -20,4 +20,4 @@ module list
 export OMP_NUM_THREADS=1
 
 export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
-srun ./evo
+srun ./evo -n

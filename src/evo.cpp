@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
       eval.evaluate(forager, i.dna, 0);
       for (auto& fit : *eval.getFitnesses()) i.fitnesses[fit.first] = fit.second;
       i.footprint.clear();
-      i.footprint.push_back(*eval.getHistory());
+      i.footprint = (*eval.getHistory());
     });
   if (novelty) {
     ga.enableNovelty();

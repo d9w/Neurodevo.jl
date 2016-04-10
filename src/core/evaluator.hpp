@@ -48,6 +48,6 @@ public:
   };
 
   const map<string, double> *getFitnesses() { return &fitnesses; }
-  const vector<double> *getHistory() { return &history; }
+  const d2 *getHistory() { return &history; }
 };
 #endif
