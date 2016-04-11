@@ -117,14 +117,14 @@ public:
       robot.theta -= 2*M_PI;
     }
 
-    std::cout << tsteps << " " << robot << " food: " << food.size() <<std::endl;
+    //std::cout << tsteps << " " << robot << " food: " << food.size() <<std::endl;
 
     tsteps += 1;
     robot.life -=1;
   }
 
   void setFitness(map<string, double> *fitnesses) {
-    std::cout << "calling set fitnesses with " << food.size() << "/" << Config::HOTDOGS << " food in " << tsteps << std::endl;
+    //std::cout << "calling set fitnesses with " << food.size() << "/" << Config::HOTDOGS << " food in " << tsteps << std::endl;
     //(*fitnesses)["consumed"] = (Config::HOTDOGS - food.size())/static_cast<double>(tsteps);
     (*fitnesses)["consumed"] = 1.0 - food.size()/static_cast<double>(Config::HOTDOGS);
   };
