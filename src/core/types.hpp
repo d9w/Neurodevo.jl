@@ -20,21 +20,33 @@ struct Types {
 
   DNAType random_dna() {
     DNAType t;
+    for (unsigned int i = 0; i < Config::N_M; i++) {
+      t.addRandomProtein(ProteinType::input, "m" + std::to_string(i));
+    }
     t.addRandomProtein(ProteinType::input, "x");
     t.addRandomProtein(ProteinType::input, "y");
     t.addRandomProtein(ProteinType::input, "z");
     t.addRandomProtein(ProteinType::input, "nt");
+    t.addRandomProtein(ProteinType::input, "threshold");
+    t.addRandomProtein(ProteinType::input, "weight");
     t.addRandomProtein(ProteinType::input, "comm");
     t.addRandomProtein(ProteinType::input, "div");
     t.addRandomProtein(ProteinType::input, "reward");
 
+    for (unsigned int i = 0; i < Config::N_M; i++) {
+      t.addRandomProtein(ProteinType::output, "m" + std::to_string(i));
+    }
     t.addRandomProtein(ProteinType::output, "nt");
     t.addRandomProtein(ProteinType::output, "nt_t");
     t.addRandomProtein(ProteinType::output, "f");
     t.addRandomProtein(ProteinType::output, "f_t");
     t.addRandomProtein(ProteinType::output, "comm");
+    t.addRandomProtein(ProteinType::output, "axon_div");
+    t.addRandomProtein(ProteinType::output, "axon_die");
+    t.addRandomProtein(ProteinType::output, "axon_none");
 
-    t.randomReguls(Config::GRN_REGULS);
+    //t.randomReguls(Config::GRN_REGULS);
+    t.randomReguls(10);
     t.randomParams();
     return t;
   }

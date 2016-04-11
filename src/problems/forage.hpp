@@ -73,6 +73,8 @@ public:
     assert(static_cast<int>(outputs->at(0).size()) == Config::X_SIZE);
     double right = 0;
     double left = 0;
+    int right_count = 0;
+    int left_count = 0;
     unsigned int right_bound = std::max(0, static_cast<int>(std::floor(Config::X_SIZE/2.0)-1));
     unsigned int left_bound = std::min(right_bound+2, Config::X_SIZE);
     vector<double> fire_signature;
@@ -81,13 +83,18 @@ public:
         double out = (*outputs)[i][j];
         if (j < left_bound) {
           left += out;
+          left_count += 1;
         }
         if (j > right_bound) {
           right += out;
+          right_count += 1;
         }
         fire_signature.push_back(out);
       }
     }
+
+    right /= right_count;
+    left /= left_count;
 
     robot.move(right, left);
 
@@ -117,7 +124,7 @@ public:
   }
 
   void setFitness(map<string, double> *fitnesses) {
-    //std::cout << "calling set fitnesses with " << food.size() << "/" << Config::HOTDOGS << " food in " << tsteps << std::endl;
+    std::cout << "calling set fitnesses with " << food.size() << "/" << Config::HOTDOGS << " food in " << tsteps << std::endl;
     //(*fitnesses)["consumed"] = (Config::HOTDOGS - food.size())/static_cast<double>(tsteps);
     (*fitnesses)["consumed"] = 1.0 - food.size()/static_cast<double>(Config::HOTDOGS);
   };

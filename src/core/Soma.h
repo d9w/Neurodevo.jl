@@ -12,6 +12,8 @@ class Soma {
   vector<Axon> axons;
   double nt_concentration;
   double next_concentration;
+  double threshold;
+  double weight;
   bool fired;
   int id;
 

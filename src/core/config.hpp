@@ -7,14 +7,14 @@ struct Config {
   static constexpr unsigned int GRN_STEPS_PER_UPDATE = 1;
 
   // Environment
-  static constexpr unsigned int N_M = 0;
+  static constexpr unsigned int N_M = 3;
   static constexpr unsigned int X_SIZE = 8;
   static constexpr unsigned int Y_SIZE = 8;
   static constexpr unsigned int Z_SIZE = 8;
   static constexpr unsigned int GRN_EVO_STEPS = 1;
   static constexpr double AXON_DIVISION_START = 0.5;
   static constexpr double AXON_DIVISION_REDUCTION = 0.1;
-  static constexpr unsigned int AXON_MAX_NUMBER = 5;
+  static constexpr unsigned int AXON_MAX_NUMBER = 10;
   static constexpr double SOMA_AXON_INPUT_THRESH = 1.0;
   static constexpr double T_ACTION_MIN = 5.0; //range for axon actions
   static constexpr double T_ACTION_MAX = 20.0;

@@ -10,6 +10,7 @@ using std::map;
 class Environment {
  public:
   using GRN = Types::DNAType;
+  int age;
   vector<int> lengths;
   vector<Soma> somas;
   vector<vector<vector<vector<double> > > > morphogens;
@@ -27,10 +28,12 @@ class Environment {
   vector<int> move_position(vector<int> position, int morph);
   Soma* soma_at(vector<int> position);
   void develop_grns(const double reward);
-  void set_nt_concentration(vector<vector<double> > inputs);
+  void set_nt_concentration(const vector<vector<double> > inputs);
   void set_outputs(vector<vector<double>> *outputs);
   void fire_ann();
   void axon_actions();
+  void set_weights();
+  void step(const vector<vector<double> > inputs, double reward);
   /*
   void populate_graph();
   double input_output_diameter();

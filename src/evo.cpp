@@ -32,6 +32,8 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
+  Types t;
+
   GAGA::GA<dna_t> ga(0, nullptr);
   ga.setEvaluator([](auto &i) {
       Forage forager(0);
@@ -57,25 +59,7 @@ int main(int argc, char** argv) {
   ga.setTournamentSize(Config::TOURNAMENT_SIZE);
   vector<GAGA::Individual<dna_t>> pop;
   for (unsigned int i = 0; i < Config::NUM_POP; ++i) {
-    dna_t t;
-    t.addRandomProtein(ProteinType::input, "x");
-    t.addRandomProtein(ProteinType::input, "y");
-    t.addRandomProtein(ProteinType::input, "z");
-    t.addRandomProtein(ProteinType::input, "nt");
-    t.addRandomProtein(ProteinType::input, "comm");
-    t.addRandomProtein(ProteinType::input, "div");
-    t.addRandomProtein(ProteinType::input, "reward");
-
-    t.addRandomProtein(ProteinType::output, "nt");
-    t.addRandomProtein(ProteinType::output, "nt_t");
-    t.addRandomProtein(ProteinType::output, "f");
-    t.addRandomProtein(ProteinType::output, "f_t");
-    t.addRandomProtein(ProteinType::output, "comm");
-
-    t.randomReguls(1);
-    t.randomParams();
-
-    pop.push_back(GAGA::Individual<dna_t>(t));
+    pop.push_back(GAGA::Individual<dna_t>(t.random_dna()));
   }
 	ga.setPopulation(pop);
   ga.step(Config::GENERATIONS);

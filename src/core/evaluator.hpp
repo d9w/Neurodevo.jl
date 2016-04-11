@@ -31,13 +31,7 @@ public:
     while(!problem.stop()) {
       problem.setInputs(&inputs);
 
-      env.develop_grns(problem.getReward());
-
-      env.set_nt_concentration(inputs);
-
-      env.axon_actions();
-
-      env.fire_ann();
+      env.step(inputs, problem.getReward());
 
       env.set_outputs(&outputs);
 
