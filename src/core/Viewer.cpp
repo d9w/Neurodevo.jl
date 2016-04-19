@@ -7,8 +7,7 @@
 #include "Viewer.h"
 using namespace glm;
 
-void Viewer::display() {
-
+void Viewer::SampleDisplay() {
   glBegin(GL_LINES);
   glColor4f(1.0, 0.0, 0.0, 1.0);
   glVertex3f(-0.6, -0.6, -0.6);
@@ -26,7 +25,6 @@ void Viewer::display() {
   glVertex3f(-0.6, -0.6, -0.6);
   glVertex3f(-0.6, -0.6, 0.6);
   glEnd();
-
 }
 
 void Viewer::KeyInput(){
@@ -73,13 +71,13 @@ Viewer::Viewer() {
   glEnable(GL_CULL_FACE);
 }
 
-void Viewer::run() {
+void Viewer::run(void (*draw)()) {
 
   do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 		KeyInput();
-    display();
+    draw();
     glFlush();
     glfwSwapBuffers(window);
     glfwPollEvents();

@@ -1,5 +1,5 @@
 CC = mpicxx
-SOURCES = core/Axon.cpp core/Soma.cpp core/Environment.cpp
+SOURCES = core/Axon.cpp core/Soma.cpp core/DNA.cpp core/ANN.cpp problems/Robot.cpp problems/Forage.cpp
 CFLAGS = -g -std=c++14 -Wall -Wextra -Wshadow -pedantic
 LFLAGS =
 DRAWLFLAGS = -lGL -lGLEW -lGLU -lglfw
@@ -19,4 +19,4 @@ draw:$(OBJECTS) core/Viewer.o draw.o
 	$(CC) $(CFLAGS) -c $< -o $@ $(OPTFLAGS)
 
 clean:
-	rm -f evo run draw *.o core/*.o
+	rm -f evo run draw *.o core/*.o problems/*.o

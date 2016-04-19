@@ -1,13 +1,11 @@
 #ifndef SOMA_H
 #define SOMA_H
 #include "Axon.h"
-#include "types.hpp"
+#include "DNA.h"
 
 class Soma {
  public:
-  using GRN = Types::DNAType;
-  GRN grn;
-  //  Environment env;
+  DNA dna;
   vector<int> position;
   vector<Axon> axons;
   double nt_concentration;
@@ -18,7 +16,7 @@ class Soma {
   int id;
 
   Soma();
-  Soma(GRN grn, vector<int> position, int id);
+  Soma(DNA dna, vector<int> position, int id);
 
   double emission(int);
   void evolve(vector<double> morphogens, double reward);

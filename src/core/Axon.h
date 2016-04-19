@@ -1,12 +1,10 @@
 #ifndef AXON_H
 #define AXON_H
-#include "types.hpp"
+#include "DNA.h"
 
 class Axon {
  public:
-  using GRN = Types::DNAType;
-  GRN grn;
-  //Environment env;
+  DNA dna;
   vector<int> position;
   double division_conc;
   bool marked_for_deletion;
@@ -15,7 +13,7 @@ class Axon {
   int age; //action counter
 
   Axon();
-  Axon(GRN grn, vector<int> position);
+  Axon(DNA dna, vector<int> position);
 
   double fire();
   void evolve(vector<double> morphogens, double nt_concentration, double soma_concentration, double soma_threshold, double reward);

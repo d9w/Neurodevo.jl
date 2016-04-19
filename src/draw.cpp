@@ -2,33 +2,50 @@
 #include "external/cxxopts/src/cxxopts.hpp"
 #include "core/config.hpp"
 #include "problems/forage.hpp"
-#include "core/evaluator.hpp"
+#include "core/Evaluator.h"
 #include "core/types.hpp"
 #include "core/Viewer.h"
-//#include "core/environment_viewer.hpp"
 
 using std::vector;
 using std::cout;
 using std::endl;
 using std::map;
 
-void stepfun() {
-  std::cout << "step" << std::endl;
+
+void step() {
+  std::cout << "evaluating " << std::endl;
+}
+
+void display() {
+  glBegin(GL_LINES);
+  glColor4f(1.0, 0.0, 0.0, 1.0);
+  glVertex3f(-0.6, -0.6, -0.6);
+  glVertex3f(0.6, -0.6, -0.6);
+  glEnd();
+
+  glBegin(GL_LINES);
+  glColor4f(0.0, 1.0, 0.0, 1.0);
+  glVertex3f(-0.6, -0.6, -0.6);
+  glVertex3f(-0.6, 0.6, -0.6);
+  glEnd();
+
+  glBegin(GL_LINES);
+  glColor4f(1.0, 1.0, 1.0, 1.0);
+  glVertex3f(-0.6, -0.6, -0.6);
+  glVertex3f(-0.6, -0.6, 0.6);
+  glEnd();
 }
 
 int main(int argc, char** argv) {
   using dna_t = Types::DNAType;
+  using problem_t = Types::ProblemType;
+  using controller_t = Types::ControllerType;
   Types t;
 
   dna_t dna = t.random_dna();
 
-  Viewer v;
-  v.run();
+  Evaluator<problem_t, controller_t> e(dna, 0);
 
-  /*
-  Forage forager(0);
-  Evaluator<Forage> eval;
-  eval.evaluate(forager, dna, 0);
-  for (auto& fit : *eval.getFitnesses()) cout << fit.first << " : " << fit.second << endl;
-  */
+  Viewer v;
+  v.run(display);
 }

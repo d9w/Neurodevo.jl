@@ -10,13 +10,13 @@ private:
   int rotate_x = 0;
   bool play = true;
 
-  void display();
+  void SampleDisplay();
   void KeyInput();
 
 public:
 
   Viewer();
-  void run();
+  void run(void (*draw)());
 
 };
 #endif

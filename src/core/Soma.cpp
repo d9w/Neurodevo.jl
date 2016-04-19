@@ -1,11 +1,10 @@
 #include <iostream>
 #include "Soma.h"
-#include "../external/grgen/common.h"
 #include "config.hpp"
 
-Soma::Soma(GRN inp_grn, vector<int> inp_position, int sid) {
+Soma::Soma(DNA inp_dna, vector<int> inp_position, int sid) {
   id = sid;
-  grn = GRN(inp_grn);
+  dna = DNA(inp_dna);
   for (unsigned int i=0; i<Config::N_D; i++) {
     position.push_back(inp_position[i]);
   }
@@ -17,14 +16,14 @@ Soma::Soma(GRN inp_grn, vector<int> inp_position, int sid) {
   fired = false;
 
   if (position[2] < static_cast<int>(Config::Z_SIZE)-1) { // don't give output neurons an axon for now
-    axons.push_back(Axon(grn, position));
+    axons.push_back(Axon(dna, position));
   }
 
 }
 
 double Soma::emission(int m) {
-  double morph = grn.getProteinConcentration("m"+std::to_string(m), ProteinType::output);
-  double thresh = grn.getProteinConcentration("m_thresh", ProteinType::output);
+  double morph = dna.getOutput("m"+std::to_string(m));
+  double thresh = dna.getOutput("m_thresh");
   if (morph == 0) {
     return morph;
   }
@@ -33,29 +32,26 @@ double Soma::emission(int m) {
 
 void Soma::evolve(vector<double> morphogens, double reward) {
   for (unsigned int i=0; i<Config::N_M; i++) {
-    grn.setProteinConcentration("m"+std::to_string(i), ProteinType::input, morphogens[i]);
+    dna.setInput("m"+std::to_string(i), morphogens[i]);
   }
-  grn.setProteinConcentration("x", ProteinType::input, (double)position[0]/Config::X_SIZE);
-  grn.setProteinConcentration("y", ProteinType::input, (double)position[1]/Config::Y_SIZE);
-  grn.setProteinConcentration("z", ProteinType::input, (double)position[2]/Config::Z_SIZE);
-  grn.setProteinConcentration("nt", ProteinType::input,
-                              std::exp(nt_concentration/((double)Config::AXON_MAX_NUMBER+2.0)));
-  grn.setProteinConcentration("weight", ProteinType::input,
-                              std::exp(weight));
-  grn.setProteinConcentration("threshold", ProteinType::input,
-                              std::exp(threshold));
+  dna.setInput("x", (double)position[0]/Config::X_SIZE);
+  dna.setInput("y", (double)position[1]/Config::Y_SIZE);
+  dna.setInput("z", (double)position[2]/Config::Z_SIZE);
+  dna.setInput("nt", std::exp(nt_concentration/((double)Config::AXON_MAX_NUMBER+2.0)));
+  dna.setInput("weight", std::exp(weight));
+  dna.setInput("threshold", std::exp(threshold));
   double axon_input = 0.0;
   for (auto axon: axons) {
-    axon_input += axon.grn.getProteinConcentration("comm", ProteinType::output);
+    axon_input += axon.dna.getOutput("comm");
   }
   if (axon_input > Config::SOMA_AXON_INPUT_THRESH) {
     axon_input = Config::SOMA_AXON_INPUT_THRESH;
   }
-  grn.setProteinConcentration("comm", ProteinType::input, axon_input);
-  grn.setProteinConcentration("div", ProteinType::input, 1.0);
-  grn.setProteinConcentration("reward", ProteinType::input, reward);
+  dna.setInput("comm", axon_input);
+  dna.setInput("div", 1.0);
+  dna.setInput("reward", reward);
 
-  grn.step(Config::GRN_EVO_STEPS);
+  dna.update();
 }
 
 bool Soma::fire() {
@@ -75,8 +71,8 @@ bool Soma::fire() {
 }
 
 std::ostream& operator<<(std::ostream& out, const Soma& s) {
-  string grnstring = "";
+  auto dnastring = s.dna.concString();
   return out << "Soma " << s.id << " at (" << s.position[0] << "," << s.position[1] << ","
              << s.position[2] << ")\tnt: (" << s.nt_concentration
-             << "," << s.threshold << "," << s.weight << ")\tgrn: [" << grnstring << "]";
+             << "," << s.threshold << "," << s.weight << ")\tdna: [" << dnastring << "]";
 }

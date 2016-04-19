@@ -1,15 +1,16 @@
+#ifndef ANN_H
+#define ANN_H
 #include <map>
 #include <random>
 #include "Soma.h"
-#include "types.hpp"
+#include "DNA.h"
 //#include "Snap.h"
 
 using std::vector;
 using std::map;
 
-class Environment {
+class ANN {
  public:
-  using GRN = Types::DNAType;
   int age;
   vector<int> lengths;
   vector<Soma> somas;
@@ -20,14 +21,14 @@ class Environment {
   //PNEGraph ann_graph;
   //PUNGraph ann_pun_graph;
 
-  Environment();
-  Environment(vector<int> lengths, GRN grn, int seed);
+  ANN();
+  ANN(DNA dna, int seed);
 
   void set_random_connectivity();
   void set_morphogens();
   vector<int> move_position(vector<int> position, int morph);
   Soma* soma_at(vector<int> position);
-  void develop_grns(const double reward);
+  void develop_dna(const double reward);
   void set_nt_concentration(const vector<vector<double> > inputs);
   void set_outputs(vector<vector<double>> *outputs);
   void fire_ann();
@@ -45,3 +46,4 @@ class Environment {
   double symmetry_fit();
   */
 };
+#endif
