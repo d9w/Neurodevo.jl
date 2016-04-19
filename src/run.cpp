@@ -3,7 +3,6 @@
 #include "core/DNA.h"
 #include "core/ANN.h"
 #include "problems/Forage.h"
-#include <random>
 
 int main(int, char**) {
   DNA dna;
