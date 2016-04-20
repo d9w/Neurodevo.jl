@@ -14,6 +14,7 @@ DNA::DNA() {
   for (unsigned int i = 0; i < Config::N_M; i++) {
     outputs.push_back("m"+std::to_string(i));
   }
+  outputs.push_back("m_thresh");
 
   for (auto& i : outputs) grn.addRandomProtein(ProteinType::output, i);
 

@@ -12,7 +12,7 @@ using std::map;
 class ANN {
  public:
   int age;
-  vector<int> lengths;
+  vector<unsigned int> lengths;
   vector<Soma> somas;
   vector<vector<vector<vector<double> > > > morphogens;
   vector<double> max_morphogens;
