@@ -2,7 +2,7 @@
 #include "Soma.h"
 #include "config.hpp"
 
-Soma::Soma(DNA inp_dna, vector<int> inp_position, int sid) {
+Soma::Soma(const DNA& inp_dna, vector<int> inp_position, int sid) {
   id = sid;
   dna = DNA(inp_dna);
   for (unsigned int i=0; i<Config::N_D; i++) {
@@ -18,7 +18,6 @@ Soma::Soma(DNA inp_dna, vector<int> inp_position, int sid) {
   if (position[2] < static_cast<int>(Config::Z_SIZE)-1) { // don't give output neurons an axon for now
     axons.push_back(Axon(dna, position));
   }
-
 }
 
 double Soma::emission(int m) {
@@ -60,10 +59,13 @@ bool Soma::fire() {
   double p2 = grn.getProteinConcentration("f_t", ProteinType::output);
   double vt = 1.0 + (double)(p1-p2)/(p1+p2);
   */
+  if (!(position[2] == 0) && nt_concentration > 0.0)
+    std::cout << "[" << id << "," << nt_concentration << "," << threshold << "] ";
   double vt = threshold;
   double vr = 0.0;
   fired = false;
   if (nt_concentration > vt) {
+    //if (!(position[2] == 0)) std::cout << "[" << id << "," << nt_concentration << "," << threshold << "] ";
     nt_concentration = vr;
     fired = true;
   }

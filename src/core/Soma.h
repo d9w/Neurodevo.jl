@@ -16,7 +16,7 @@ class Soma {
   int id;
 
   Soma();
-  Soma(DNA dna, vector<int> position, int id);
+  Soma(const DNA& dna, vector<int> position, int id);
 
   double emission(int);
   void evolve(vector<double> morphogens, double reward);

@@ -13,7 +13,7 @@ class Axon {
   int age; //action counter
 
   Axon();
-  Axon(DNA dna, vector<int> position);
+  Axon(const DNA& dna, vector<int> position);
 
   double fire();
   void evolve(vector<double> morphogens, double nt_concentration, double soma_concentration, double soma_threshold, double reward);

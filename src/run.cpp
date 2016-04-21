@@ -6,8 +6,8 @@
 
 int main(int, char**) {
   DNA dna;
-  Forage forage{0};
-  ANN ann{dna, 0};
+  Forage forage(0);
+  ANN ann(dna, 0);
   vector<vector<double>> outputs;
 
   while (!forage.stop()) {

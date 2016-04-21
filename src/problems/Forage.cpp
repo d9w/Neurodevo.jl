@@ -27,19 +27,21 @@ Forage::Forage(int seed) {
 }
 
 const d2 Forage::getInputs() {
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
   d2 inputs;
   inputs.push_back(vector<double> (Config::X_SIZE, 1.0));
   // inputs[0] is an x-length row at y=0
   for (unsigned int i = 1; i < Config::Y_SIZE; i++) inputs.push_back(vector<double> (Config::X_SIZE, 0.0));
   reward = 0.0;
   for (auto foo : nearby_food()) {
-    double dist = 1.0 - (foo[0] / (double) robot.sight);
+    double distance = 1.0 - (foo[0] / (double) robot.sight);
     double angle = foo[1]; //should be from 0 to M_PI
     int sensor = std::floor(angle/(M_PI/Config::X_SIZE));
 
-    reward = std::max(reward, dist);
+    reward = std::max(reward, distance);
     for (unsigned int i=1; i<Config::Y_SIZE; i++) {
-      if ((double)i/(Config::Y_SIZE-1) < dist) {
+      if (dist(rand_engine) > 0.5) {
+        //if ((double)i/(Config::Y_SIZE-1) < distance) {
         inputs[i][sensor] = 1.0;
       }
     }
@@ -123,15 +125,15 @@ bool Forage::stop() {
 const d2 Forage::nearby_food() {
   d2 nearby;
   bool eat;
-  double dist;
+  double distance;
 
   for (unsigned int i=0; i<food.size(); ) {
     eat = false;
-    dist = std::sqrt((food[i][0] - robot.x) * (food[i][0] - robot.x) +
+    distance = std::sqrt((food[i][0] - robot.x) * (food[i][0] - robot.x) +
                     (food[i][1] - robot.y) * (food[i][1] - robot.y));
 
-    if (dist <= robot.sight) {
-      if (dist <= robot.size) {
+    if (distance <= robot.sight) {
+      if (distance <= robot.size) {
         eat = true;
       } else {
         double angle = std::atan2(food[i][1] - robot.y, food[i][0] - robot.x);
@@ -141,7 +143,7 @@ const d2 Forage::nearby_food() {
           angle -= robot.theta;
         }
         if (angle >= 0 && angle < M_PI) {
-          nearby.push_back({dist, angle});
+          nearby.push_back({distance, angle});
         }
       }
     }

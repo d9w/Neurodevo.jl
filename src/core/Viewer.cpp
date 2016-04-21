@@ -61,21 +61,21 @@ void Viewer::DrawBox(GLfloat size, GLenum type) {
 
 void Viewer::DrawAxes() {
   glBegin(GL_LINES);
-  glColor4f(1.0, 0.0, 0.0, 1.0);
+  glColor4f(1.0, 1.0, 1.0, 1.0);
   glVertex3f(-0.6, -0.6, -0.6);
-  glVertex3f(0.6, -0.6, -0.6);
+  glVertex3f(-0.5, -0.6, -0.6);
   glEnd();
 
   glBegin(GL_LINES);
-  glColor4f(0.0, 1.0, 0.0, 1.0);
+  glColor4f(1.0, 1.0, 1.0, 1.0);
   glVertex3f(-0.6, -0.6, -0.6);
-  glVertex3f(-0.6, 0.6, -0.6);
+  glVertex3f(-0.6, -0.5, -0.6);
   glEnd();
 
   glBegin(GL_LINES);
-  glColor4f(0.0, 0.0, 1.0, 1.0);
+  glColor4f(1.0, 1.0, 1.0, 1.0);
   glVertex3f(-0.6, -0.6, -0.6);
-  glVertex3f(-0.6, -0.6, 0.6);
+  glVertex3f(-0.6, -0.6, -0.5);
   glEnd();
 }
 
@@ -97,37 +97,85 @@ void Viewer::KeyInput(){
 }
 
 void Viewer::DrawANN(ANN ann) {
-  // draw soma
+  double max_thresh = 0.0;
+  double max_weight = 0.0;
+  double min_weight = 1e10;
+  for (auto& soma : ann.somas) {
+    max_thresh = std::max(max_thresh, soma.threshold);
+    for (auto& axon : soma.axons) {
+      max_weight = std::max(max_weight, axon.weight);
+      min_weight = std::min(min_weight, axon.weight);
+    }
+  }
+
+  // draw axons
+  if (max_weight > 0.0) {
+    for (auto& soma : ann.somas) {
+      for (auto& axon : soma.axons) {
+        vector<double> slope;
+        for (unsigned int d=0; d<Config::N_D; d++) {
+          slope.push_back((axon.position[d]-soma.position[d])/11.0);
+        }
+        for (int i=0; i<11; i++) {
+          double x = soma.position[0]+i*slope[0];
+          double y = soma.position[1]+i*slope[1];
+          double z = soma.position[2]+i*slope[2];
+          auto morphs = ann.morphogens[std::round(x)][std::round(y)][std::round(z)];
+          glBegin(GL_LINES);
+          glColor4f(morphs[0], morphs[1], morphs[2], 0.2*((axon.weight-min_weight)/max_weight));
+          glVertex3f(ce(x,0), ce(y, 1), ce(z, 2));
+          glVertex3f(ce(soma.position[0]+(i+1)*slope[0],0), ce(soma.position[1]+(i+1)*slope[1],1),
+                    ce(soma.position[2]+(i+1)*slope[2],2));
+          glEnd();
+        }
+      }
+    }
+  }
+
+  // draw morphogens and soma
   for (auto& soma : ann.somas) {
     int s_x = soma.position[0];
     int s_y = soma.position[1];
     int s_z = soma.position[2];
-    glColor4f(ann.morphogens[s_x][s_y][s_z][0], ann.morphogens[s_x][s_y][s_z][1], ann.morphogens[s_x][s_y][s_z][2],
-              0.4);
-    glPushMatrix ();
-    glTranslatef(ce(s_x,0), ce(s_y,1), ce(s_z,2));
-    DrawBox(0.08, GL_LINE_LOOP);
-    glPopMatrix ();
-  }
-
-  // draw axons
-  for (auto& soma : ann.somas) {
-    for (auto& axon : soma.axons) {
-      vector<double> slope;
-      for (unsigned int d=0; d<Config::N_D; d++) {
-        slope.push_back((axon.position[d]-soma.position[d])/11.0);
+    double radius = 0.0;
+    if (soma.threshold > 0.0 && soma.nt_concentration > 0.0) {
+      radius = 0.1*soma.threshold/max_thresh*std::min(soma.nt_concentration / soma.threshold, 1.0);
+    }
+    if (radius > 0.0) {
+      glColor4f(1.0, 1.0, 1.0, 0.3);
+      glPushMatrix();
+      glTranslatef(ce(s_x,0), ce(s_y,1), ce(s_z,2));
+      DrawBox(0.1*soma.threshold/max_thresh, GL_LINE_LOOP);
+      glPopMatrix();
+    }
+    if (soma.fired) {
+      glColor4f(1.0, 1.0, 1.0, 1.0);
+      glPushMatrix();
+      glTranslatef(ce(s_x,0), ce(s_y,1), ce(s_z,2));
+      if (soma.threshold > 0.0) {
+        DrawBox(0.1*soma.threshold/max_thresh, GL_QUADS);
+      } else {
+        DrawBox(0.01, GL_QUADS);
       }
-      for (int i=0; i<11; i++) {
-        double x = soma.position[0]+i*slope[0];
-        double y = soma.position[1]+i*slope[1];
-        double z = soma.position[2]+i*slope[2];
-        auto morphs = ann.morphogens[std::round(x)][std::round(y)][std::round(z)];
-        glBegin(GL_LINES);
-        glColor4f(1.0, 1.0, 1.0, 1.0);
-        glVertex3f(ce(x,0), ce(y, 1), ce(z, 2));
-        glVertex3f(ce(soma.position[0]+(i+1)*slope[0],0), ce(soma.position[1]+(i+1)*slope[1],1),
-                   ce(soma.position[2]+(i+1)*slope[2],2));
-        glEnd();
+      glPopMatrix();
+      for (auto& axon : soma.axons) {
+        auto rec_soma = ann.soma_at(axon.position);
+        if (rec_soma != nullptr && rec_soma != &soma && rec_soma->position[2] != 0) {
+          glBegin(GL_LINES);
+          glColor4f(1.0, 1.0, 1.0, 1.0);
+          glVertex3f(ce(soma.position[0],0), ce(soma.position[1],1), ce(soma.position[2],2));
+          glVertex3f(ce(rec_soma->position[0],0), ce(rec_soma->position[1],1), ce(rec_soma->position[2],2));
+          glEnd();
+        }
+      }
+    } else {
+      if (radius > 0.0) {
+        glColor4f(ann.morphogens[s_x][s_y][s_z][0], ann.morphogens[s_x][s_y][s_z][1],
+                  ann.morphogens[s_x][s_y][s_z][2], 0.3);
+        glPushMatrix();
+        glTranslatef(ce(s_x,0), ce(s_y,1), ce(s_z,2));
+        DrawBox(radius, GL_QUADS);
+        glPopMatrix();
       }
     }
   }
@@ -155,6 +203,8 @@ Viewer::Viewer() {
   glfwPollEvents();
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);

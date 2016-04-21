@@ -1,5 +1,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
+
 struct Config {
   // grn parametets
   static constexpr unsigned int ID_SIZE = 32;

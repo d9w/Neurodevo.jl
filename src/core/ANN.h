@@ -12,7 +12,7 @@ using std::map;
 class ANN {
  public:
   int age;
-  vector<unsigned int> lengths;
+  vector<int> lengths;
   vector<Soma> somas;
   vector<vector<vector<vector<double> > > > morphogens;
   vector<double> max_morphogens;
@@ -22,7 +22,7 @@ class ANN {
   //PUNGraph ann_pun_graph;
 
   ANN();
-  ANN(DNA dna, int seed);
+  ANN(const DNA& dna, int seed);
 
   void set_random_connectivity();
   void set_morphogens();

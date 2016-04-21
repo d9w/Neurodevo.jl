@@ -5,11 +5,9 @@
 #include "ANN.h"
 #include "DNA.h"
 
-using namespace std;
-
 ANN::ANN() {}
 
-ANN::ANN(DNA dna, int seed) {
+ANN::ANN(const DNA& dna, int seed) {
 
   age = 0;
 
@@ -17,11 +15,11 @@ ANN::ANN(DNA dna, int seed) {
 
   lengths = {Config::X_SIZE, Config::Y_SIZE, Config::Z_SIZE};
 
-  for (unsigned int x_i=0; x_i < lengths[0]; x_i++) {
+  for (int x_i=0; x_i < lengths[0]; x_i++) {
     vector<vector<vector<double> > > ys;
-    for (unsigned int y_i=0; y_i < lengths[1]; y_i++) {
+    for (int y_i=0; y_i < lengths[1]; y_i++) {
       vector<vector<double> > zs;
-      for (unsigned int z_i=0; z_i < lengths[2]; z_i++) {
+      for (int z_i=0; z_i < lengths[2]; z_i++) {
         vector<double> concs;
         for (unsigned int c_i=0; c_i < Config::N_M; c_i++) {
           concs.push_back(0.0);
@@ -34,9 +32,9 @@ ANN::ANN(DNA dna, int seed) {
   }
 
   int id =0;
-  for (unsigned int x=0; x < lengths[0]; x++) {
-    for (unsigned int y=0; y < lengths[1]; y++) {
-      for (unsigned int z=0; z < lengths[2]; z++) {
+  for (int x=0; x < lengths[0]; x++) {
+    for (int y=0; y < lengths[1]; y++) {
+      for (int z=0; z < lengths[2]; z++) {
         if (x == 0 || x == lengths[0]-1 || y == 0 || y == lengths[1]-1
             || z == 0 || z == lengths[2]-1) {
           //if (z == 0 || z == lengths[2]-1 || z == 4) {
@@ -72,9 +70,9 @@ void ANN::set_random_connectivity() {
   // reposition axons
   for (auto& soma : somas) {
     soma.threshold = dist(rand_engine)*2.0;
-    soma.weight = dist(rand_engine)*2.0-1.0;
+    soma.weight = 0.01*(dist(rand_engine)*2.0-1.0);
     for (auto& axon : soma.axons) {
-      axon.weight = dist(rand_engine)*2.0-1.0;
+      axon.weight = 0.1*(dist(rand_engine)*2.0-1.0);
       for (unsigned int d=0; d<lengths.size(); d++) {
         axon.position[d] = std::floor(dist(rand_engine)*lengths[d]);
       }
@@ -85,22 +83,21 @@ void ANN::set_random_connectivity() {
 void ANN::set_morphogens() {
   double emission = 0.0;
   double distance = 0.0;
-  double morph = 0.0;
-  vector<int> positions = {0, 0, 0};
-  for (unsigned int x=0; x<lengths[0]; x++) {
-    for (unsigned int y=0; y<lengths[1]; y++) {
-      for (unsigned int z=0; z<lengths[2]; z++) {
+  for (unsigned int m=0; m < Config::N_M; m++) {
+    max_morphogens[m] = 0;
+  }
+  for (int x=0; x<lengths[0]; x++) {
+    for (int y=0; y<lengths[1]; y++) {
+      for (int z=0; z<lengths[2]; z++) {
         for (unsigned int m=0; m < Config::N_M; m++) {
           morphogens[x][y][z][m] = 0.0;
           for (auto& soma : somas) {
-            // might want to have discretized distance while in a discretized space
-            for (unsigned int i=0; i<Config::N_D; i++) {
-              positions[i] = soma.position[i];
-            }
-            distance = std::max(0.5, pow((x-positions[0]),2)+pow((y-positions[1]),2)+
-                                            pow((z-positions[2]),2));
+            distance = std::max(0.5, (std::pow(x-soma.position[0],2.0)+std::pow(y-soma.position[1],2.0)+
+                                      std::pow(z-soma.position[2],2.0)));
+
             emission = soma.emission(m);
             morphogens[x][y][z][m] += emission/distance;
+            //std::cout << "[" << soma.position[0] << "," << soma.position[1] << "," << soma.position[2] << "]->[" << x << "," << y << "," << z << "] m: " << m << " c: " << soma.dna.getOutput("m"+std::to_string(m)) << " m_thresh: " << soma.dna.getOutput("m_thresh") << " dist: " << distance << " emission: " << emission << " morph: " << emission/distance << std::endl;
           }
           max_morphogens[m] = std::max(max_morphogens[m], morphogens[x][y][z][m]);
         }
@@ -109,15 +106,15 @@ void ANN::set_morphogens() {
   }
 
   std::cout << "max morphogen: ";
-  for (auto& m : max_morphogens) std::cout << max_morphogens[m] << " ";
+  for (auto m : max_morphogens) std::cout << m << " ";
   std::cout << std::endl;
 
   // normalize morphogens based on max for each
   for (unsigned int m=0; m<Config::N_M; m++) {
     if (max_morphogens[m] > 0.0) {
-      for (unsigned int x=0; x<lengths[0]; x++) {
-        for (unsigned int y=0; y<lengths[1]; y++) {
-          for (unsigned int z=0; z<lengths[2]; z++) {
+      for (int x=0; x<lengths[0]; x++) {
+        for (int y=0; y<lengths[1]; y++) {
+          for (int z=0; z<lengths[2]; z++) {
             morphogens[x][y][z][m] /= max_morphogens[m];
           }
         }
@@ -127,7 +124,6 @@ void ANN::set_morphogens() {
 }
 
 vector<int> ANN::move_position(vector<int> position, int morph) {
-  return position;
   vector<vector<int>> pos_mods = {{0, 0, 1}, {0, 0, -1}, {0, 1, 0}, {0, -1, 0}, {1, 0, 0}, {-1, 0, 0}};
   int x=position[0];
   int y=position[1];
@@ -183,16 +179,19 @@ void ANN::develop_dna(const double reward) {
 }
 
 void ANN::set_nt_concentration(const vector<vector<double> > inputs) {
-  for (unsigned int x=0; x < lengths[0]; x++) {
-    for (unsigned int y=0; y < lengths[1]; y++) {
+  for (int x=0; x < lengths[0]; x++) {
+    for (int y=0; y < lengths[1]; y++) {
       soma_at({x, y, 0})->next_concentration += inputs[y][x];
     }
   }
 
+  double vr = 0;
+
   for (auto& soma: somas) {
-    double delta_conc = 0;
+    double vt = soma.threshold;
+    //double delta_conc = 0;
     //double delta_conc = (soma.nt_concentration - vr) * (soma.nt_concentration - vt); //QIF
-    //double delta_conc = 0.1*soma.nt_concentration; //LIF
+    double delta_conc = -0.1*soma.nt_concentration; //LIF
     soma.nt_concentration = soma.nt_concentration + delta_conc + soma.next_concentration;
     soma.next_concentration = 0.0;
   }
@@ -200,9 +199,9 @@ void ANN::set_nt_concentration(const vector<vector<double> > inputs) {
 
 void ANN::set_outputs(vector<vector<double>> *outputs) {
   outputs->clear();
-  for (unsigned int x=0; x < lengths[0]; x++) {
+  for (int x=0; x < lengths[0]; x++) {
     vector<double> o;
-    for (unsigned int y=0; y < lengths[1]; y++) {
+    for (int y=0; y < lengths[1]; y++) {
       if (soma_at({x, y, 0})->fired) {
         o.push_back(1.0);
       } else {
@@ -214,26 +213,27 @@ void ANN::set_outputs(vector<vector<double>> *outputs) {
 }
 
 void ANN::fire_ann() {
-  //std::cout << "Firing ANN ";
+  std::cout << "Firing ANN ";
   for (auto& soma : somas) {
     if (soma.fire()) {
-      //std::cout << soma.id << " ";
       for (auto& axon : soma.axons) {
         auto rec_soma = soma_at(axon.position);
-        if (rec_soma != NULL && rec_soma != &soma && rec_soma->position[2] != 0) {
+        if (rec_soma != nullptr && rec_soma != &soma && rec_soma->position[2] != 0) {
             //&& (soma.position[2] != 0 || rec_soma->position[2] != lengths[2]-1)) {
-          rec_soma->next_concentration += (axon.weight + soma.weight)/2.0;
+          rec_soma->next_concentration += axon.weight;//(axon.weight + soma.weight)/2.0;
         }
       }
     }
   }
-  //std::cout << std::endl;
+  std::cout << std::endl;
 }
 
 void ANN::axon_actions() {
+  int n_axons = 0;
   int action = 0;
   for (auto& soma: somas) {
     for (auto& axon : soma.axons) {
+      n_axons += 1;
       if (axon.age>0) {
         action = axon.act();
         if (action < static_cast<int>(Config::N_M)) {
@@ -267,6 +267,7 @@ void ANN::axon_actions() {
       }
     }
   }
+  std::cout << n_axons << " AXONS" << std::endl;
 }
 
 void ANN::set_weights() {
@@ -274,19 +275,19 @@ void ANN::set_weights() {
     double f = soma.dna.getOutput("f");
     double f_t = soma.dna.getOutput("f_t");
     if (f > 0 || f_t > 0) {
-      soma.threshold += (f - f_t)/(f + f_t);
+      soma.threshold += 0.1*((f - f_t)/(f + f_t));
       if (soma.threshold < 0.0) soma.threshold = 0.0;
     }
     double nt = soma.dna.getOutput("nt");
     double nt_t = soma.dna.getOutput("nt_t");
     if (nt > 0 || nt_t > 0) {
-      soma.weight += (nt - nt_t)/(nt + nt_t);
+      soma.weight += 0.1*((nt - nt_t)/(nt + nt_t));
     }
     for (auto& axon : soma.axons) {
       nt = axon.dna.getOutput("nt");
       nt_t = axon.dna.getOutput("nt_t");
       if (nt > 0 || nt_t > 0) {
-        axon.weight += (nt - nt_t)/(nt + nt_t);
+        axon.weight += 0.1*((nt - nt_t)/(nt + nt_t));
       }
     }
   }

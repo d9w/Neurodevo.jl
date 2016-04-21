@@ -3,7 +3,7 @@
 #include "Axon.h"
 #include "DNA.h"
 
-Axon::Axon(DNA inp_dna, vector<int> inp_position) {
+Axon::Axon(const DNA& inp_dna, vector<int> inp_position) {
   dna = DNA(inp_dna);
 
   for (unsigned int i=0; i<Config::N_D; i++) {
@@ -71,7 +71,7 @@ int Axon::act() {
 
   switch(action) {
   case Config::N_M: marked_for_branch=true; break;
-  case Config::N_M+1: marked_for_deletion=true; break;
+  case Config::N_M+1: marked_for_deletion=false; break;
   case Config::N_M+2: break;
   default: break;
   }
