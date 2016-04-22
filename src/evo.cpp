@@ -1,48 +1,34 @@
 #define CLUSTER
-#include "external/gaga/gaga/gaga.hpp"
-#include "external/cxxopts/src/cxxopts.hpp"
+#include "external/gaga/gaga.hpp"
 #include "core/config.hpp"
-#include "core/types.hpp"
-#include "core/evaluator.hpp"
-#include "problems/forage.hpp"
+#include "core/DNA.h"
+#include "core/ANN.h"
+#include "problems/Forage.h"
 
-int main(int argc, char** argv) {
-	using dna_t = Types::DNAType;
+int main(int, char**) {
 
 	std::string evaluatorName;
-  bool novelty;
-	try {
-		cxxopts::Options options(argv[0]);
-		options.add_options()("e,evaluator", "evaluator name",
-		                      cxxopts::value<std::string>(evaluatorName));
-		options.add_options()("n,novelty", "enable novelty");
-		options.parse(argc, argv);
-    novelty = options["novelty"].as<bool>();
-	} catch (const cxxopts::OptionException& e) {
-		std::cout << "error parsing options: " << e.what() << std::endl;
-		exit(1);
-	} catch (const std::bad_cast& e) {
-		std::cout << "bad cast: " << e.what() << std::endl;
-		exit(1);
-	}
-	if (evaluatorName == "length" || evaluatorName == "") {
-    std::cout << "length evaluator" << std::endl;
-  } else {
-    std::cerr << "No valid evaluator found, aborting." << std::endl;
-    exit(1);
-  }
+  bool novelty = false;
 
-  Types t;
+  GAGA::GA<DNA> ga(0, nullptr);
 
-  GAGA::GA<dna_t> ga(0, nullptr);
   ga.setEvaluator([](auto &i) {
-      Forage forager(0);
-      Evaluator<Forage> eval;
-      eval.evaluate(forager, i.dna, 0);
-      for (auto& fit : *eval.getFitnesses()) i.fitnesses[fit.first] = fit.second;
+      Forage forage(0);
+      ANN ann(i.dna, 0);
+      vector<vector<double>> outputs;
+
+      while (!forage.stop()) {
+        auto ins = forage.getInputs();
+        ann.step(ins, forage.getReward());
+        ann.set_outputs(&outputs);
+        forage.step(outputs);
+      }
+
+      for (auto& fit : forage.getFitness()) i.fitnesses[fit.first] = fit.second;
       i.footprint.clear();
-      i.footprint = (*eval.getHistory());
+      i.footprint = forage.getFootprint();
     });
+
   if (novelty) {
     ga.enableNovelty();
     ga.setMinNoveltyForArchive(Config::NOVELTY_MIN);
@@ -57,11 +43,18 @@ int main(int argc, char** argv) {
   ga.setPopSaveInterval(10);
   ga.setSelectionMethod(GAGA::SelectionMethod::paretoTournament);
   ga.setTournamentSize(Config::TOURNAMENT_SIZE);
-  vector<GAGA::Individual<dna_t>> pop;
+
+
+  ga.initPopulation(DNA::random);
+
+  /*
+  vector<GAGA::Individual<DNA>> pop;
   for (unsigned int i = 0; i < Config::NUM_POP; ++i) {
     pop.push_back(GAGA::Individual<dna_t>(t.random_dna()));
   }
 	ga.setPopulation(pop);
-  ga.step(Config::GENERATIONS);
+  */
+
+  ga.step();
   return 0;
 }

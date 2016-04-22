@@ -59,13 +59,10 @@ bool Soma::fire() {
   double p2 = grn.getProteinConcentration("f_t", ProteinType::output);
   double vt = 1.0 + (double)(p1-p2)/(p1+p2);
   */
-  if (!(position[2] == 0) && nt_concentration > 0.0)
-    std::cout << "[" << id << "," << nt_concentration << "," << threshold << "] ";
   double vt = threshold;
   double vr = 0.0;
   fired = false;
   if (nt_concentration > vt) {
-    //if (!(position[2] == 0)) std::cout << "[" << id << "," << nt_concentration << "," << threshold << "] ";
     nt_concentration = vr;
     fired = true;
   }

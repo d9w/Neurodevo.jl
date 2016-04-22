@@ -105,10 +105,6 @@ void ANN::set_morphogens() {
     }
   }
 
-  std::cout << "max morphogen: ";
-  for (auto m : max_morphogens) std::cout << m << " ";
-  std::cout << std::endl;
-
   // normalize morphogens based on max for each
   for (unsigned int m=0; m<Config::N_M; m++) {
     if (max_morphogens[m] > 0.0) {
@@ -185,10 +181,10 @@ void ANN::set_nt_concentration(const vector<vector<double> > inputs) {
     }
   }
 
-  double vr = 0;
+  //double vr = 0;
 
   for (auto& soma: somas) {
-    double vt = soma.threshold;
+    //double vt = soma.threshold;
     //double delta_conc = 0;
     //double delta_conc = (soma.nt_concentration - vr) * (soma.nt_concentration - vt); //QIF
     double delta_conc = -0.1*soma.nt_concentration; //LIF
@@ -213,7 +209,6 @@ void ANN::set_outputs(vector<vector<double>> *outputs) {
 }
 
 void ANN::fire_ann() {
-  std::cout << "Firing ANN ";
   for (auto& soma : somas) {
     if (soma.fire()) {
       for (auto& axon : soma.axons) {
@@ -225,7 +220,6 @@ void ANN::fire_ann() {
       }
     }
   }
-  std::cout << std::endl;
 }
 
 void ANN::axon_actions() {
@@ -267,7 +261,6 @@ void ANN::axon_actions() {
       }
     }
   }
-  std::cout << n_axons << " AXONS" << std::endl;
 }
 
 void ANN::set_weights() {
@@ -310,7 +303,7 @@ void ANN::step(const vector<vector<double> > inputs, double reward) {
   set_morphogens();
   set_weights();
   //std::cout << "actions: ";
-  axon_actions();
+  if ((age%5) == 0) axon_actions();
   //std::cout << std::endl;
 
   // fire resultant ANN

@@ -17,7 +17,7 @@ class DNA {
   DNA();
   DNA(const GRN_T &g);
   DNA(const std::string &s);
-  DNA random();
+  static DNA random();
   DNA crossover(const DNA &other);
 
   void update();
