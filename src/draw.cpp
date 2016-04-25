@@ -16,6 +16,7 @@ ANN ann{dna, 0};
 Viewer v;
 vector<vector<double>> outputs;
 vector<double> max_morphs = {0.01, 0.01, 0.01};
+int i = 0;
 
 void display() {
   v.DrawAxes();
@@ -28,6 +29,9 @@ void step() {
     ann.step(ins, forage.getReward());
     ann.set_outputs(&outputs);
     forage.step(outputs);
+  } else if(i<5) {
+    i++;
+    forage = Forage(i);
   }
 
   display();

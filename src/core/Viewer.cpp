@@ -141,7 +141,7 @@ void Viewer::DrawANN(ANN ann) {
     if (soma.threshold > 0.0 && soma.nt_concentration > 0.0) {
       radius = 0.1*soma.threshold/max_thresh*std::min(soma.nt_concentration / soma.threshold, 1.0);
     }
-    if (radius > 0.0) {
+    if (true || radius > 0.0) {
       glColor4f(1.0, 1.0, 1.0, 0.3);
       glPushMatrix();
       glTranslatef(ce(s_x,0), ce(s_y,1), ce(s_z,2));

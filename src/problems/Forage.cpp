@@ -104,7 +104,7 @@ void Forage::step(const d2 outputs) {
     robot.theta -= 2*M_PI;
   }
 
-  //std::cout << tsteps << " " << robot << " food: " << food.size() <<std::endl;
+  std::cout << tsteps << " " << robot << " food: " << food.size() <<std::endl;
 
   tsteps += 1;
   robot.life -=1;
