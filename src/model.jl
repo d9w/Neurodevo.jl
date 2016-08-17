@@ -4,6 +4,10 @@ include("neuron.jl")
 
 immutable Constants
   morphogen_decay::Float64
+  step_init::Int64
+  step_total::Int64
+  change_stop::Float64
+  axon_max::Int64
 end
 
 type Model
@@ -62,5 +66,10 @@ function evaluate(model::Model)
   end
   modul = modularity(Graph(model.synapses), divis)
   dens = density(model.synapses)
-  (nv(model.synapses), ne(model.synapses), cc, length(communities), modul, dens)
+  n_axons = 0
+  for n in model.neurons
+    n_axons += length(n.axons)
+  end
+  n_axons /= length(model.neurons)
+  (nv(model.synapses), ne(model.synapses), n_axons, cc, length(communities), modul, dens)
 end

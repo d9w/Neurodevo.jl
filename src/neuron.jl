@@ -31,7 +31,7 @@ function action!(neuron::Neuron, morphogens::Vector{Float64}, dims::Vector{Int64
   for axon in neuron.axons
     axon.age += 1
   end
-  if length(neuron.axons) < 20
+  if length(neuron.axons) < constants.axon_max
     for axon in neuron.axons[actions .== nm+2]
       push!(neuron.axons, Axon(axon.position, 0))
     end

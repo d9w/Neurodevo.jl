@@ -14,24 +14,15 @@ end
 
 function main(window)
   push!(window.assets, "widgets")
-  push!(window.assets, "tex")
   push!(window.assets,("ThreeJS","threejs"))
   push!(window.assets, "layout2")
-  g = DiGraph(100, 300)
+  gs = [load("graphs/graph$i", "digraph", :lg) for i=50:50:300]
 
   # create the tabs
-  tabbar = tabs([
-       hbox("Description"),
-       hbox("Interactive"),
-       hbox("Necklace graph"),
-  ])
+  tabbar = tabs([hbox("N=$i") for i=50:50:300])
 
   # create the pages
-  tabcontent = pages([
-    title(3, "web component all the things"),
-    netgraph(g),
-    Escher.image("http://imgur.com/qnPxe3a.png")
-  ])
+  tabcontent = pages(map(x->netgraph(x), gs))
 
   # connect the tabs to pages
   # returns a pair of "connected" tab set and pages
