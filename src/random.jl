@@ -1,8 +1,7 @@
 include("model.jl")
 
 g = DiGraph()
-#m_decay = 0.0:0.1:0.5
-constants = Constants(0.1, 100, 1000, 0.2, 20)
+constants = Constants(0.1, 100, 1000, 0.2, 20, 1.0, 0.1)
 
 for i=1:30
   N = 10*i

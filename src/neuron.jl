@@ -1,45 +1,42 @@
 type Axon
-  position::Vector{Int64}
+  position::Vector{Float64}
   age::Int64
 end
 
 type Neuron
-  position::Vector{Int64}
+  position::Vector{Float64}
   axons::Vector{Axon}
-  connections::Vector{Int64}
   age::Int64
 end
 
 function Neuron(dims::Vector{Int64})
-  position = map(x -> rand(1:x), dims)
+  position = rand(length(dims)).*dims
   axons = [Axon(position, 0)]
-  Neuron(position, axons, [], 0)
+  Neuron(position, axons, 0)
 end
 
-function emission(neuron::Neuron, morphogens::Vector{Float64})
-  return rand(length(morphogens))
-end
-
-function action!(neuron::Neuron, morphogens::Vector{Float64}, dims::Vector{Int64})
+function action!(neuron::Neuron, morphogens::Vector{Float64}, gradients::Array, dims::Vector{Int64})
   nm = length(morphogens)
-  str_actions = [["m$i" for i=1:nm]...,"quiscience","division","apoptosis"]
+  str_actions = [[["t_$i", "a_$i"] for i=1:nm]...,"quiscience","division","apoptosis"]
+  apoptosis = zeros(Bool, length(neuron.axons))
+  new_axons = Vector{Axon}()
   actions = ceil(length(str_actions) .* rand(length(neuron.axons)))
-  for axon in neuron.axons[actions .<= nm]
-    axon.position += round(randn(length(axon.position)))
-    axon.position = max(min(axon.position, dims),ones(length(dims)))
-  end
-  for axon in neuron.axons
+  for i in eachindex(neuron.axons)
+    axon = neuron.axons[i]
+    action = actions[i]
     axon.age += 1
-  end
-  if length(neuron.axons) < constants.axon_max
-    for axon in neuron.axons[actions .== nm+2]
-      push!(neuron.axons, Axon(axon.position, 0))
+    if action <= 2*nm
+      morph = action % 2
+      axon.position += (2*(action - morph*2)-1).*gradients[morph]
+      # bounds
+      axon.position = max(min(axon.position, dims),ones(length(dims)))
+    elseif action == 2*nm+2 & length(neuron.axons)+length(new_axons) < constants.axon_max
+      push!(new_axons, Axon(axon.position, 0))
+    elseif action == 2*nm+3
+      lives[i] = false
     end
   end
-  # axons = neuron.axons[actions .!= nm+3]
-  # for axon in axons
-  #   axon.age += 1
-  # end
-  # neuron.axons = [axons[:]; new_axons[:]]
+  axons = neuron.axons[~apoptosis]
+  neuron.axons = [axons[:]; new_axons[:]]
   neuron.age += 1
 end

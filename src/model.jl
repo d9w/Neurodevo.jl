@@ -1,4 +1,7 @@
+using Base.Cartesian
 using LightGraphs
+using Distances
+using Interpolations
 
 include("neuron.jl")
 
@@ -8,38 +11,55 @@ immutable Constants
   step_total::Int64
   change_stop::Float64
   axon_max::Int64
+  neuron_size::Float64
+  min_dist::Float64
 end
 
 type Model
   dims::Vector{Int64}
   morphogens::Array{Float64}
+  grid::Array{Int64}
   neurons::Vector{Neuron}
-  neuron_map::Array{Int64}
   synapses::DiGraph
 end
 
 function Model(dims::Vector{Int64}=[10,10,10], N::Int64=100)
   morphogens = zeros(Float64, [dims[:];3]...)
-  neuron_map = zeros(Float64, dims...)
+  grid = zeros(Int64, *(dims...), length(dims))
+  i = 1
+  @nloops length(dims) j morphogens begin
+    grid[i] = collect(@ntuple length(dims) j)
+    i += 1
+  end
   neurons = Vector{Neuron}(N)
   for i=1:N
     neurons[i] = Neuron(dims)
-    neuron_map[neurons[i].position...] = i
   end
-  Model(dims, morphogens, neurons, neuron_map, DiGraph())
+  Model(dims, morphogens, neurons, DiGraph())
 end
 
 function step!(model::Model)
   # update morphogens
-  for neuron in model.neurons
-    ms = model.morphogens[[neuron.position;:]...][:]
-    model.morphogens[[neuron.position;:]...] = emission(neuron, ms) + constants.morphogen_decay*ms
+  model.morphogens *= constants.morphogen_decay
+  for i in eachindex(model.grid[:,1])
+    pos = grid[i,:]
+    for neuron in model.neurons
+      morphogens[pos...;1] += 1/max(constants.min_dist,evaluate(Euclidean(), pos, neuron.position))
+      for axon in neuron.axons
+        morphogens[pos...;2] += 1/max(constants.min_dist,evaluate(Euclidean(), pos, axon.position))
+      end
+    end
+    # this can be pre-computed
+    morphogens[pos...;3] += 1/max(constants.min_dist,evaluate(Euclidean(), pos, dims/2))
   end
+
+  itp = interpolate(morphogens, BSpline(Linear()), OnGrid())
 
   # update neurons
   for neuron in model.neurons
-    ms = model.morphogens[[neuron.position;:]...][:]
-    action!(neuron, ms, model.dims)
+    morphogens = [itp[[neuron.position[:];i]...] for i=1:3]
+    gradients = [gradient(itp, neuron.position... ,i)[1:length(model.dims)] for i=1:3]
+    action!(neuron, ms, gradients, model.dims)
   end
 
   # update graph
@@ -47,9 +67,10 @@ function step!(model::Model)
   for i=1:length(model.neurons)
     neuron = model.neurons[i]
     for axon in neuron.axons
-      n = model.neuron_map[axon.position...]
-      if n >= 1 && n <= length(model.neurons) && n != i
-        add_edge!(model.synapses, i, n)
+      for j=1:length(model.neurons)
+        if evaluate(Euclidean(), axon.position, model.neurons[n].position) < constants.neuron_size
+          add_edge!(model.synapses, i, n)
+        end
       end
     end
   end
