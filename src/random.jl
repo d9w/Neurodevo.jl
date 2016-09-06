@@ -19,7 +19,7 @@ for i=1:30
   end
 
   avg_change /= step_count
-  stats = evaluate(model)
+  stats = graph_eval(model)
   print_joined(STDOUT, [N; stats...; step_count; avg_change], ",")
   print("\n")
   save("../graphs/graph$N", g, :lg)

@@ -15,28 +15,25 @@ function Neuron(dims::Vector{Int64})
   Neuron(position, axons, 0)
 end
 
-function action!(neuron::Neuron, morphogens::Vector{Float64}, gradients::Array, dims::Vector{Int64})
+function action!(neuron::Neuron, morphogens::Array, gradients::Array, dims::Vector{Int64})
   nm = length(morphogens)
-  str_actions = [[["t_$i", "a_$i"] for i=1:nm]...,"quiscience","division","apoptosis"]
-  apoptosis = zeros(Bool, length(neuron.axons))
+  str_actions = [[["t_$i"; "a_$i"] for i=1:nm]...;"quiscience";"division";"apoptosis"]
   new_axons = Vector{Axon}()
   actions = ceil(length(str_actions) .* rand(length(neuron.axons)))
   for i in eachindex(neuron.axons)
     axon = neuron.axons[i]
     action = actions[i]
     axon.age += 1
+    # 2 is the number of actions per morphogen, as above
     if action <= 2*nm
-      morph = action % 2
-      axon.position += (2*(action - morph*2)-1).*gradients[morph]
-      # bounds
+      axon.position += (2*(action % 2)-1).*gradients[cld(action,2)]
+      # stay in bounds
       axon.position = max(min(axon.position, dims),ones(length(dims)))
     elseif action == 2*nm+2 & length(neuron.axons)+length(new_axons) < constants.axon_max
       push!(new_axons, Axon(axon.position, 0))
-    elseif action == 2*nm+3
-      lives[i] = false
     end
   end
-  axons = neuron.axons[~apoptosis]
+  axons = neuron.axons[actions .!= 2*nm+3] #apoptosis
   neuron.axons = [axons[:]; new_axons[:]]
   neuron.age += 1
 end
