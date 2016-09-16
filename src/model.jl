@@ -1,113 +1,175 @@
 using LightGraphs
 using Distances
-using Interpolations
+using Grid
 
-include("neuron.jl")
+include("controller.jl")
 
-immutable Constants
-  morphogen_decay::Float64
-  step_init::Int64
-  step_total::Int64
-  change_stop::Float64
-  axon_max::Int64
-  neuron_size::Float64
-  min_dist::Float64
+type Cell
+  p_id::Int64
+  id::Int64
+  position::Vector{Float64}
+  params::Vector{Int64}
+  ctype::Int64
+end
+
+function Cell(id::Int64)
+  position = DIMS[:,1]+rand(size(DIMS,1)).*(DIMS[:,2]-DIMS[:,1])
+  params = rand(1:N_MORPHS, N_PARAMS)
+  ctype = 1 # neural stem cell
+  Cell(0, id, position, params, ctype)
 end
 
 type Model
-  dims::Vector{Int64}
+  maxid::Int64
   morphogens::Array{Float64}
   grid::Array{Int64}
-  neurons::Vector{Neuron}
-  synapses::DiGraph
+  cells::Dict{Int64, Cell}
+  soma_axons::Dict{Int64, Vector{Int64}}
+  synapse::Dict{Int64, Int64}
+  synapse_weights::Dict{Int64, Float64}
+  synapse_graph::DiGraph
 end
 
-function Model(dims::Vector{Int64}=[10,10,10], N::Int64=100)
-  morphogens = zeros(Float64, [dims[:];3]...)
-  grid = zeros(Int64, *(dims...), length(dims))
-  # TODO: make this work in N-dimensions without Cartesian
-  @assert(length(dims)==3)
+function Model()
   i = 1
-  for gi=1:dims[1]
-    for gj=1:dims[2]
-      for gk=1:dims[3]
-        grid[i,:] = [gi, gj, gk]
-        i+=1
-      end
-    end
+  grid = Array{Float64}(*(DIMS...), N_D)
+  for c = Counter(DIMS)
+    grid[i,:] = convert(Array{Float64}, c)
+    i += 1
   end
-  # @nloops length(dims) j morphogens begin
-  #   grid[i] = collect(@ntuple length(dims) j)
-  #   i += 1
-  # end
-  neurons = Vector{Neuron}(N)
-  for i=1:N
-    neurons[i] = Neuron(dims)
+  morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
+  cells = Dict{ASCIIString, Cell}
+  for i=1:N_NSC
+    cell = Cell(i)
+    cells[i] = cell
   end
-  Model(dims, morphogens, grid, neurons, DiGraph())
+  Model(N_NSC, morphogens, grid, cells, Dict{Int64, Vector{Int64}}(), Dict{Int64, Int64}(), DiGraph())
 end
 
-function step!(model::Model)
-  # update morphogens
-  model.morphogens *= constants.morphogen_decay
-  for i in eachindex(model.grid[:,1])
-    pos = model.grid[i,:][:]
-    for neuron in model.neurons
-      model.morphogens[[pos;1]...]+=1/max(constants.min_dist,evaluate(Euclidean(), pos, neuron.position))
-      for axon in neuron.axons
-        model.morphogens[[pos;2]...]+=1/max(constants.min_dist,evaluate(Euclidean(), pos, axon.position))
+function apoptosis!(model::Model, cell::Cell)
+  if cell.ctype == 3
+    delete!(model.soma_axons, cell.id)
+    for s in keys(model.synapses)
+      if model.synapses[s] == cell.id
+        delete!(model.synapses, s)
+        delete!(model.synapse_weights, s)
       end
     end
-    # this can be pre-computed
-    model.morphogens[[pos;3]...]+=1/max(constants.min_dist,evaluate(Euclidean(), pos, model.dims/2))
+  elseif cell.ctype == 4
+    delete!(model.synapses, cell.id)
+    delete!(model.synapse_weights, cell.id)
+    for s in keys(model.soma_axons)
+      for a in model.soma_axons[s]
+        if a == cell.id
+          pop!(model.soma_axons[s],a)
+          break
+        end
+      end
+    end
   end
+  delete!(model.cells, cell.id)
+end
 
-  maxmorphs = maximum(model.morphogens,[1,2,3])[:]
-  println(maxmorphs)
-  println(minimum(model.morphogens,[1,2,3])[:])
-  for m in eachindex(maxmorphs)
-    model.morphogens[:,:,:,m] /= maxmorphs[m]
+function update_morphogens!(model::Model)
+  # model.morphogens *= MORPHOGEN_DECAY
+  for i in eachindex(model.grid[:,1])
+    pos = vec(model.grid[i,:])
+    for (ckey, cell) in cells
+      for m in 1:N_MORPHS
+        morph = model.morphogens[[pos;m]...]
+        morph += morphogen_diff(m, cell.type, cell.params, cell.position, pos)
+        morph = max(0.0, morph)
+        model.morphogens[[pos;m]...] = morph
+      end
+    end
   end
-  println(maximum(model.morphogens,[1,2,3])[:])
-  println(minimum(model.morphogens,[1,2,3])[:])
-  itp = interpolate(model.morphogens, BSpline(Linear()), OnGrid())
+  # morphogen normalization
+  # sm = [size(morphs)[1:N_D]...]
+  # maxmorphs = vec(maximum(model.morphogens, collect(1:N_D)))
+  # for m in eachindex(maxmorphs)
+  #   model.morphogens[[[1:sm[i] for i in eachindex(sm)];m]...] /= maxmorphs[m]
+  # end
+end
 
-  # update neurons
-  for neuron in model.neurons
-    morphogens = [itp[[neuron.position[:];i]...] for i=1:3]
-    gradients = [gradient(itp, neuron.position... ,i)[1:length(model.dims)] for i=1:3]
-    action!(neuron, morphogens, gradients, model.dims)
-  end
-
-  # update graph
-  model.synapses = DiGraph(length(model.neurons))
-  for i=1:length(model.neurons)
-    neuron = model.neurons[i]
-    for axon in neuron.axons
-      for j=1:length(model.neurons)
-        if evaluate(Euclidean(), axon.position, model.neurons[j].position) < constants.neuron_size
-          add_edge!(model.synapses, i, j)
+function cell_division!(model::Model, itp::Grid.InterpGrid)
+  for (ckey,cell) in model.cells
+    morphogens = [itp[[cell.position[:];m]...] for m in 1:N_MORPHS]
+    if division(morphogens, cell.ctype, cell.parameters)
+      model.maxid += 1
+      branch_dir = child_branch(morphogens, cell.ctype, cell.parameters)
+      ctype = child_type(morphogens, cell.ctype, cell.parameters)
+      id = model.maxid
+      if ctype == 0
+        apoptosis!(model, cell)
+      else
+        params = child_parameters(morphogens, cell.ctype, cell.parameters, ctype)
+        pos = cell.position + child_position(morphogens, cell.ctype, cell.parameters, DIMS)
+        pos = min(max(pos, [0.,0.,0.]), DIMS)
+        model.cells[id] = Cell(cell.id, id, pos, params, ctype)
+        if ctype == 3
+          model.soma_axons[id] = []
+        elseif cell.ctype == 3 && ctype == 4
+          push!(model.soma_axons[cell.id], id)
         end
       end
     end
   end
 end
 
-function graph_eval(model::Model)
-  cc = global_clustering_coefficient(model.synapses)
-  communities = strongly_connected_components(model.synapses)
-  divis = ones(Int64, nv(model.synapses))
-  for comm=1:length(communities)
-    for vert in comm
-      divis[vert] = comm
+function synapse_update!(model::Model, itp::Grid.InterpGrid)
+  for (akey, acell) in model.cells
+    if acell.ctype == 4
+      if ~haskey(akey, model.synapses)
+        for (skey, scell) in model.cells
+          if scell.ctype == 3 && bkey != acell.p_id
+            if synapse_formation(acell.position, bcell.position, DIMS)
+              model.synapses[akey] = skey
+              model.synapse_weights[akey] = 0.0
+              break
+            end
+          end
+        end
+      end
+      if haskey(akey, model.synapses)
+        soma = model.cells[model.synapse[akey]]
+        amorphs = [itp[[acell.position[:];m]...] for m in 1:N_MORPHS]
+        smorphs = [itp[[soma.position[:];m]...] for m in 1:N_MORPHS]
+        model.synapse_weights[akey] += synapse_weight(smorphs, amorphs, soma.params, acell.params)
+        if ~synapse_survival(model.synapse_weights[akey])
+          apoptosis!(model, acell)
+        end
+      end
     end
   end
-  modul = modularity(Graph(model.synapses), divis)
-  dens = density(model.synapses)
-  n_axons = 0
-  for n in model.neurons
-    n_axons += length(n.axons)
+end
+
+function cell_movement!(model::Model, itp::Grid.InterpGrid)
+  for (ckey,cell) in model.cells
+    morphs = Vector{Float64}(N_MORPHS)
+    grad = Array{Float64}(N_MORPHS, N_D)
+    for m = 1:N_MORPHS
+      v,g = valgrad(msi, [pos[:];m]...)
+      morps[m] = v
+      grad[m,:] = g[1:N_D]
+    end
+    if ~in(ckey, [collect(keys(model.synapses));collect(values(model.synapses))])
+      cell.position += cell_movement(morphs, grad, cell.ctype, cell.params, DIMS)
+      cell.position = min(max(cell.position, [0.,0.,0.]), DIMS)
+    end
   end
-  n_axons /= length(model.neurons)
-  (nv(model.synapses), ne(model.synapses), n_axons, cc, length(communities), modul, dens)
+end
+
+function step!(model::Model)
+  # update morphogens
+  update_morphogens!(model)
+  itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
+
+  # division and apoptosis
+  cell_division!(model, itp)
+
+  # synapse formation and checking
+  synapse_update!(model, itp)
+
+  # cell movement
+  cell_movement!(model, itp)
 end
