@@ -56,8 +56,7 @@ end
 morphogen diffusion
 applied for each cell at each grid point
 """
-function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64},
-                        cell_position::Vector{Float64}, position::Vector{Float64}, world_dims::Vector{Float64})
+function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64}, dist::Float64)
   diff = 0.0
   factor = 0.0
   if cell_type == 1 || cell_type == 3
@@ -72,7 +71,6 @@ function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_par
     end
   end
   if factor != 0.0
-    dist = evaluate(Euclidean(), cell_position, position) / *(world_dims...)
     diff = factor * exp(-10.0*(dist^2))
   end
   diff
@@ -115,8 +113,8 @@ end
 determines if a synapse is formed, true if formed
 applied to each axon, soma pair not in a synapse at each timestep
 """
-function synapse_formation(soma_position::Vector{Float64}, axon_position::Vector{Float64}, world_dims::Array{Float64})
-  evaluate(Euclidean(), soma_position, axon_position) < 0.01 * mean(world_dims)
+function synapse_formation(dist::Float64)
+  dist < 0.01
 end
 
 """
