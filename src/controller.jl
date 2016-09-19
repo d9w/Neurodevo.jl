@@ -1,5 +1,19 @@
 using Distances
 
+type Controller
+  division::Function
+  child_branch::Function
+  child_type::Function
+  child_params::Function
+  child_position::Function
+  morphogen_diff::Function
+  cell_movement::Function
+  synapse_formation::Function
+  synapse_weight::Function
+  synapse_survival::Function
+  reward::Function
+end
+
 """
 determines if a cell should divide, true for division
 applied at each time step for each cell
@@ -23,7 +37,8 @@ end
 child cell type, int in 1:4
 applied upon positive division decision
 """
-function child_type(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, branch_left::Bool)
+function child_type(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, branch_left::Bool,
+                    bias::Float64)
   right = [2, 2, 0, 0]
   left = [3, 0, 4, 4]
   branch_left ? left[cell_type] : right[cell_type]
@@ -53,10 +68,24 @@ function child_params(morphogens::Vector{Float64}, pcell_type::Int64, pcell_para
 end
 
 """
+child cell position, applied as a diff of the parent cell position
+Applied upon positive division decision
+"""
+function child_position(morphogens::Vector{Float64}, parent_cell_type::Int64, parent_cell_params::Vector{Int64},
+                        world_dims::Array{Float64}, bias::Float64)
+  support_m = morphogens[parent_cell_params[1]]
+  dir = convert(Int64,ceil(length(world_dims) * bias))
+  pos = zeros(world_dims)
+  pos[dir] = 0.001*mean(world_dims)/max(support_m,1.0)
+  pos
+end
+
+"""
 morphogen diffusion
 applied for each cell at each grid point
 """
-function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64}, dist::Float64)
+function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64}, dist::Float64,
+                        bias::Float64)
   diff = 0.0
   factor = 0.0
   if cell_type == 1 || cell_type == 3
@@ -71,22 +100,9 @@ function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_par
     end
   end
   if factor != 0.0
-    diff = factor * exp(-10.0*(dist^2))
+    diff = factor * exp(-(dist^2))
   end
   diff
-end
-
-"""
-child cell position, applied as a diff of the parent cell position
-Applied upon positive division decision
-"""
-function child_position(morphogens::Vector{Float64}, parent_cell_type::Int64, parent_cell_params::Vector{Int64},
-                        world_dims::Array{Float64}, bias::Float64)
-  support_m = morphogens[parent_cell_params[1]]
-  dir = convert(Int64,ceil(length(world_dims) * bias))
-  pos = zeros(world_dims)
-  pos[dir] = 0.001*mean(world_dims)/max(support_m,1.0)
-  pos
 end
 
 """
@@ -94,7 +110,7 @@ the diff in position of a cell
 applied at each time step for each cell
 """
 function cell_movement(morphogens::Vector{Float64}, gradients::Array{Float64}, cell_type::Int64,
-                       cell_params::Vector{Int64}, world_dims::Array{Float64})
+                       cell_params::Vector{Int64}, world_dims::Array{Float64}, bias::Float64)
   velocity = [0.05, 0.0, 0.0, 0.1]
   v = velocity[cell_type] * mean(world_dims)
   new_pos = zeros(world_dims)
@@ -113,7 +129,7 @@ end
 determines if a synapse is formed, true if formed
 applied to each axon, soma pair not in a synapse at each timestep
 """
-function synapse_formation(dist::Float64)
+function synapse_formation(dist::Float64, bias::Float64)
   dist < 0.01
 end
 
@@ -122,7 +138,7 @@ update to synaptic weight
 applied to each possible synapse (soma,axon pair) at each timestep
 """
 function synapse_weight(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                        soma_params::Vector{Int64}, axon_params::Vector{Int64})
+                        soma_params::Vector{Int64}, axon_params::Vector{Int64}, boas::Float64)
   soma_morphs[soma_params[1]]+axon_morphs[axon_params[1]]-soma_morphs[soma_params[2]]-axon_morphs[axon_params[2]]
 end
 
@@ -139,8 +155,14 @@ synaptic weight modification based on reward
 applied to each synapse upon reward signal, requires supervisor
 """
 function reward(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                soma_params::Vector{Int64}, axon_params::Vector{Int64})
+                soma_params::Vector{Int64}, axon_params::Vector{Int64}, bias::Float64)
   # use morphogens to detect if synapse is being inhibited or enhanced
   # reinforce that behavior
   2*synapse_weight(soma_morphs, axon_morphs, soma_params, axon_params)
+end
+
+
+function Controller()
+  Controller(division, child_branch, child_type, child_params, child_position, morphogen_diff, cell_movement,
+             synapse_formation, synapse_weight, synapse_survival, reward)
 end
