@@ -7,7 +7,7 @@
 /usr-staging
 /Make.user
 /julia-*
-/graphs
+/plots
 
 .juliahistory
 *.dat
