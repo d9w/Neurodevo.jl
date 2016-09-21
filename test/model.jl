@@ -80,7 +80,7 @@ function cell_movement()
   cell_movement!(m, itp, cont)
   newpos = map(x->x[2].pos, m.cells)
   @test newpos != pos
-  @test all(x->all(x.>=0.), newpos)
+  @test all(x->all(x.>=1.), newpos)
   @test all(x->all(x.<=DIMS), newpos)
 end
 
@@ -146,7 +146,8 @@ end
 
 function handwritten_rules()
   model = Model()
+  cont = Controller()
   for i = 1:10
-    step!(model)
+    step!(model, cont)
   end
 end

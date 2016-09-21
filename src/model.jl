@@ -14,7 +14,7 @@ type Cell
 end
 
 function Cell(id::Int64)
-  pos = 1+rand(length(DIMS)).*(DIMS-1.0)
+  pos = 1.0.+rand(length(DIMS)).*(DIMS-1.0)
   params = rand(1:N_MORPHS, N_PARAMS)
   ctype = 1 # neural stem cell
   Cell(0, id, pos, params, ctype)
@@ -124,26 +124,36 @@ end
 
 function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
   bias = make_bias!(model)
+  apop = Array{Int64}(0)
+  new_cells = Array{Cell}(0)
   for (ckey,cell) in model.cells
     morphogens = Array{Float64}([itp[[cell.pos[:];m]...] for m in 1:N_MORPHS])
     if cont.division(morphogens, cell.ctype, cell.params, bias)
       branch_dir = cont.child_branch(morphogens, cell.ctype, cell.params, bias)
       ctype = cont.child_type(morphogens, cell.ctype, cell.params, branch_dir, bias)
       if ctype == 0
-        apoptosis!(model, cell)
+        append!(apop, [cell.id])
       else
-        id = maxid(model) + 1
+        id = maxid(model) + length(new_cells) + 1
         params = cont.child_params(morphogens, cell.ctype, cell.params, ctype, bias)
         pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params, convert(Array{Float64},DIMS), bias)
-        pos = min(max(pos, [0.,0.,0.]), DIMS)
+        pos = min(max(pos, [1.,1.,1.]), DIMS)
         p_id = cell.id
         if cell.ctype == 4
           p_id = cell.p_id
         end
         new_cell = Cell(p_id, id, pos, params, ctype)
-        add_cell!(model, new_cell)
+        append!(new_cells, [new_cell])
       end
     end
+  end
+  for a in apop
+    if haskey(model.cells, a) # soma deletion will cause axon deletion
+      apoptosis!(model, model.cells[a])
+    end
+  end
+  for n in new_cells
+    add_cell!(model, n)
   end
 end
 
@@ -190,22 +200,22 @@ function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
     end
     if ~in(ckey, [collect(keys(model.synapse));collect(values(model.synapse))])
       cell.pos += cont.cell_movement(morphs, grad, cell.ctype, cell.params, convert(Array{Float64}, DIMS), bias)
-      cell.pos = min(max(cell.pos, [0.,0.,0.]), DIMS)
+      cell.pos = min(max(cell.pos, [1.,1.,1.]), DIMS)
     end
   end
 end
 
-function step!(model::Model)
+function step!(model::Model, cont::Controller)
   # update morphogens
-  update_morphogens!(model)
+  update_morphogens!(model, cont)
   itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
 
   # division and apoptosis
-  cell_division!(model, itp)
+  cell_division!(model, itp, cont)
 
   # synapse formation and checking
-  synapse_update!(model, itp)
+  synapse_update!(model, itp, cont)
 
   # cell movement
-  cell_movement!(model, itp)
+  cell_movement!(model, itp, cont)
 end
