@@ -1,3 +1,4 @@
+using Base.Test
 using StatsBase
 using Gadfly
 using Colors
@@ -9,54 +10,52 @@ function add_cells()
   g = Cell(maxid(m)+1)
   g.ctype = 2
   add_cell!(m, g)
-  @assert haskey(m.cells, g.id)
-  @assert maxid(m)==g.id
+  @test haskey(m.cells, g.id)
+  @test maxid(m)==g.id
   soma = Cell(maxid(m)+1)
   soma.p_id = 1
   soma.ctype = 3
   add_cell!(m, soma)
-  @assert haskey(m.soma_axons, soma.id)
+  @test haskey(m.soma_axons, soma.id)
   axon = Cell(maxid(m)+1)
   axon.p_id = soma.id
   axon.ctype = 4
   add_cell!(m, axon)
-  @assert haskey(m.synapse, axon.id)
-  @assert haskey(m.synapse_weight, axon.id)
-  @assert axon.id in m.soma_axons[soma.id]
+  @test axon.id in m.soma_axons[soma.id]
   m
 end
 
 function apoptosis()
   m = add_cells()
   apoptosis!(m, m.cells[1])
-  @assert ~haskey(m.cells,1)
+  @test ~haskey(m.cells,1)
   soma = first(keys(filter((k,v)->v.ctype==3, m.cells)))
   axon = first(keys(filter((k,v)->v.ctype==4, m.cells)))
   apoptosis!(m, m.cells[axon])
-  @assert ~haskey(m.cells, axon)
-  @assert ~haskey(m.synapse, axon)
-  @assert ~haskey(m.synapse_weight, axon)
-  @assert ~(axon in m.soma_axons[soma])
-  @assert mapreduce(x->axon in x[2], +, m.soma_axons) == 0
+  @test ~haskey(m.cells, axon)
+  @test ~haskey(m.synapse, axon)
+  @test ~haskey(m.synapse_weights, axon)
+  @test ~(axon in m.soma_axons[soma])
+  @test mapreduce(x->axon in x[2], +, m.soma_axons) == 0
   new_axon = Cell(maxid(m)+1)
   new_axon.p_id = soma
   new_axon.ctype = 4
   add_cell!(m, new_axon)
   apoptosis!(m, m.cells[soma])
-  @assert ~haskey(m.cells, soma)
-  @assert ~haskey(m.soma_axons, soma)
-  @assert ~haskey(m.cells, new_axon.id)
-  @assert ~haskey(m.synapse, new_axon.id)
-  @assert ~haskey(m.synapse_weight, new_axon.id)
-  @assert mapreduce(x->new_axon.id in x[2], +, m.soma_axons) == 0
+  @test ~haskey(m.cells, soma)
+  @test ~haskey(m.soma_axons, soma)
+  @test ~haskey(m.cells, new_axon.id)
+  @test ~haskey(m.synapse, new_axon.id)
+  @test ~haskey(m.synapse_weights, new_axon.id)
+  @test isempty(m.soma_axons) || (mapreduce(x->new_axon.id in x[2], +, m.soma_axons) == 0)
 end
 
 function update_morphogens()
   m = Model()
   cont = Controller()
   update_morphogens!(m, cont)
-  @assert any(m.morphogens .> 0)
-  @assert ~any(m.morphogens .< 0)
+  @test any(m.morphogens .> 0)
+  @test ~any(m.morphogens .< 0)
 end
 
 function cell_division()
@@ -64,12 +63,12 @@ function cell_division()
   cont = Controller()
   # force division decision
   cont.division = (a, b, c, d) -> true
-  itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
+  itp = InterpGrid(m.morphogens, BCnil, InterpQuadratic)
   cells = deepcopy(collect(values(m.cells)))
   cell_division!(m, itp, cont)
-  @assert cells != collect(values(m.cells))
+  @test cells != collect(values(m.cells))
   newcells = filter((k,v)->v.p_id!=0,m.cells)
-  @assert length(newcells) > 0
+  @test length(newcells) > 0
 end
 
 function cell_movement()
@@ -77,29 +76,35 @@ function cell_movement()
   cont = Controller()
   pos = map(x->x[2].pos, m.cells)
   update_morphogens!(m, cont)
-  itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
-  cell_movement!(model, itp, cont)
+  itp = InterpGrid(m.morphogens, BCnil, InterpQuadratic)
+  cell_movement!(m, itp, cont)
   newpos = map(x->x[2].pos, m.cells)
-  @assert newpos != pos
-  @assert all(x->all(x.>0), newpos)
-  @assert all(x->all(x.<DIMS), newpos)
+  @test newpos != pos
+  @test all(x->all(x.>=0.), newpos)
+  @test all(x->all(x.<=DIMS), newpos)
 end
 
 function synapse_update()
   m = Model()
+  for (ckey, cell) in m.cells
+    delete!(m.cells, ckey)
+  end
   axons = Array{Int64}(2)
   somas = Array{Int64}(2)
+  id = 1
   for i=1:2
     # add two neural cells
-    soma = Cell(maxid(m)+1)
+    soma = Cell(id)
     soma.ctype = 3
-    add_cell!(m, soma)
     somas[i] = soma.id
-    axon = Cell(maxid(m)+1)
+    add_cell!(m, soma)
+    id+=1
+    axon = Cell(id)
     axon.p_id = soma.id
     axon.ctype = 4
-    add_cell!(m, axon)
     axons[i] = axon.id
+    add_cell!(m, axon)
+    id+=1
   end
 
   # force synapse formation and survival
@@ -109,13 +114,34 @@ function synapse_update()
 
   # cache the current weights and update
   weights = deepcopy(values(m.synapse_weights))
-  itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
+  itp = InterpGrid(m.morphogens, BCnil, InterpQuadratic)
   synapse_update!(m, itp, cont)
 
   # neural cells should be connected with new neural weights
-  @assert m.synapse[axons[1]] == somas[2]
-  @assert m.synapse[axons[2]] == somas[1]
-  @assert weights != values(m.synapse_weights)
+  @test m.synapse[axons[1]] == somas[2]
+  @test m.synapse[axons[2]] == somas[1]
+  @test weights != values(m.synapse_weights)
+end
+
+function test_all()
+  print("add_cells")
+  add_cells();
+  print_with_color(:green, "...[passed]\n")
+  print("apoptosis")
+  apoptosis()
+  print_with_color(:green, "...[passed]\n")
+  print("update_morphogens")
+  update_morphogens()
+  print_with_color(:green, "...[passed]\n")
+  print("cell_division")
+  cell_division()
+  print_with_color(:green, "...[passed]\n")
+  print("cell_movement")
+  cell_movement()
+  print_with_color(:green, "...[passed]\n")
+  print("synapse_update")
+  synapse_update()
+  print_with_color(:green, "...[passed]\n")
 end
 
 function handwritten_rules()
