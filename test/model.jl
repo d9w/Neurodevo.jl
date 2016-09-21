@@ -109,8 +109,8 @@ function synapse_update()
 
   # force synapse formation and survival
   cont = Controller()
-  cont.synapse_formation = (a,b) -> true
-  cont.synapse_survival = (a,b) -> true
+  cont.synapse_formation = (a) -> true
+  cont.synapse_survival = (a) -> true
 
   # cache the current weights and update
   weights = deepcopy(values(m.synapse_weights))

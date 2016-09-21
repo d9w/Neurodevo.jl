@@ -61,17 +61,10 @@ end
 
 funcname = "division"
 outlabels = ["division"]
-inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4];"bias"]
+inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4];"velo"]
 infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];x->rand()]
 inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Float64(x[10]))
 profile_graph(division, funcname, outlabels, inlabels, infuns, inform)
-
-funcname = "child_branch"
-outlabels = ["child_branch"]
-inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4];"bias"]
-infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];x->rand()]
-inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Float64(x[10]))
-profile_graph(child_branch, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "child_type"
 outlabels = ["child_type"]
@@ -82,16 +75,16 @@ profile_graph(child_type, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "child_params"
 outlabels = ["p$i" for i=1:4]
-inlabels = [["m$m" for m=1:4];"pc";["p$i" for i=1:4];"cc";"bias"]
-infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];x->rand(1:4);x->rand()]
-inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Int64(x[10]),Float64(x[11]))
+inlabels = [["m$m" for m=1:4];"pc";["p$i" for i=1:4];"cc"]
+infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];x->rand(1:4)]
+inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Int64(x[10]))
 profile_graph(child_params, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "child_position"
 outlabels = ["pos$i" for i=1:3]
-inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4];["d$i" for i=1:3];"bias"]
-infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];[x->DIMS[i] for i=1:3];x->rand()]
-inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Array{Float64}(x[10:12]),Float64(x[13]))
+inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4]]
+infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4]]
+inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]))
 profile_graph(child_position, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "morphogen_diff"
@@ -103,10 +96,9 @@ profile_graph(morphogen_diff, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "cell_movement"
 outlabels = ["pos$i" for i=1:3]
-inlabels = [["m$i" for i=1:4];["g$i$j" for i=1:4,j=1:3][:];"c";["p$i" for i=1:4];["d$i" for i=1:3]]
-infuns = [[x->mean(DIMS)*rand() for i=1:16];x->rand(1:4);[x->rand(1:4) for i=1:4];[x->DIMS[i] for i=1:3]]
-inform = x->(Array{Float64}(x[1:4]),reshape(Array{Float64}(x[5:16]),4,3),Int64(x[17]),Array{Int64}(x[18:21]),
-             Array{Float64}(x[22:24]))
+inlabels = [["m$i" for i=1:4];["g$i$j" for i=1:4,j=1:3][:];"c";["p$i" for i=1:4]]
+infuns = [[x->mean(DIMS)*rand() for i=1:16];x->rand(1:4);[x->rand(1:4) for i=1:4]]
+inform = x->(Array{Float64}(x[1:4]),reshape(Array{Float64}(x[5:16]),4,3),Int64(x[17]),Array{Int64}(x[18:21]))
 profile_graph(cell_movement, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "synapse_weight"
