@@ -138,7 +138,7 @@ update to synaptic weight
 applied to each possible synapse (soma,axon pair) at each timestep
 """
 function synapse_weight(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                        soma_params::Vector{Int64}, axon_params::Vector{Int64}, boas::Float64)
+                        soma_params::Vector{Int64}, axon_params::Vector{Int64}, bias::Float64)
   soma_morphs[soma_params[1]]+axon_morphs[axon_params[1]]-soma_morphs[soma_params[2]]-axon_morphs[axon_params[2]]
 end
 
@@ -146,7 +146,7 @@ end
 synaptic survival, true if the synapse survives
 Applied to each synapse at each timestep
 """
-function synapse_survival(synapse_weight::Float64)
+function synapse_survival(synapse_weight::Float64, bias::Float64)
   synapse.weight >= 0
 end
 

@@ -21,7 +21,6 @@ function Cell(id::Int64)
 end
 
 type Model
-  maxid::Int64
   morphogens::Array{Float64}
   grid::Array{Int64}
   cells::Dict{Int64, Cell}
@@ -50,7 +49,11 @@ function Model()
   synapse_weights = Dict{Int64, Float64}()
   synapse_graph = DiGraph()
   entropy = 0
-  Model(i, morphogens, grid, cells, soma_axons, synapse, synapse_weights, synapse_graph, entropy)
+  Model(morphogens, grid, cells, soma_axons, synapse, synapse_weights, synapse_graph, entropy)
+end
+
+function maxid(model::Model)
+  maximum(keys(model.cells))
 end
 
 function make_bias!(model::Model)
@@ -58,8 +61,23 @@ function make_bias!(model::Model)
   rand()
 end
 
+function add_cell!(model::Model, cell::Cell)
+  if haskey(model.cells, cell.id)
+    error("cell already in model")
+  end
+  model.cells[cell.id] = cell
+  if cell.ctype == 3
+    model.soma_axons[cell.id] = []
+  elseif cell.ctype == 3 && ctype == 4
+    push!(model.soma_axons[cell.id], id)
+  end
+end
+
 function apoptosis!(model::Model, cell::Cell)
   if cell.ctype == 3
+    for a in model.soma_axons[cell.id]
+      delete!(model.cells, model.cells[a])
+    end
     delete!(model.soma_axons, cell.id)
     for s in keys(model.synapse)
       if model.synapse[s] == cell.id
@@ -71,11 +89,9 @@ function apoptosis!(model::Model, cell::Cell)
     delete!(model.synapse, cell.id)
     delete!(model.synapse_weights, cell.id)
     soma_id = cell.p_id
-    for a in model.soma_axons[soma_id]
-      if a == cell.id
-        pop!(model.soma_axons[soma_id],a) #TODO: this is broken
-        break
-      end
+    if cell.p_id in keys(model.soma_axons)
+      soma_axons = model.soma_axons[cell.p_id]
+      deleteat!(soma_axons, findin(soma_axons, cell.id))
     end
   end
   delete!(model.cells, cell.id)
@@ -108,54 +124,54 @@ function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
   bias = make_bias!(model)
   for (ckey,cell) in model.cells
     morphogens = Array{Float64}([itp[[cell.pos[:];m]...] for m in 1:N_MORPHS])
-    println([morphogens; cell.params])
     if cont.division(morphogens, cell.ctype, cell.params, bias)
-      println("dividing")
-      model.maxid += 1
       branch_dir = cont.child_branch(morphogens, cell.ctype, cell.params, bias)
       ctype = cont.child_type(morphogens, cell.ctype, cell.params, branch_dir, bias)
-      id = model.maxid
       if ctype == 0
+        println("removing cell $cell")
         apoptosis!(model, cell)
       else
+        id = maxid(model) + 1
         params = cont.child_params(morphogens, cell.ctype, cell.params, ctype, bias)
         pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params, convert(Array{Float64},DIMS), bias)
         pos = min(max(pos, [0.,0.,0.]), DIMS)
-        model.cells[id] = Cell(cell.id, id, pos, params, ctype)
-        if ctype == 3
-          model.soma_axons[id] = []
-        elseif cell.ctype == 3 && ctype == 4
-          push!(model.soma_axons[cell.id], id)
+        p_id = cell.id
+        if cell.ctype == 4
+          p_id = cell.p_id
         end
+        new_cell = Cell(p_id, id, pos, params, ctype)
+        add_cell!(model, new_cell)
       end
     end
+    println([ckey;length(model.cells)])
   end
 end
 
 function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
   bias = make_bias!(model)
-  for (akey, acell) in model.cells
-    if acell.ctype == 4
-      if ~haskey(akey, model.synapse)
-        for (skey, scell) in model.cells
-          if scell.ctype == 3 && bkey != acell.p_id
-            dist = evaluate(Euclidean(), acell.pos, bcell.pos)
-            if cont.synapse_formation(dist, bias)
-              model.synapse[akey] = skey
-              model.synapse_weights[akey] = 0.0
-              break
-            end
+  axons = filter((k,v)->v.ctype==4, m.cells)
+  for (akey, acell) in axons
+    # check for possible new synapses
+    if ~haskey(akey, model.synapse)
+      for (skey, scell) in model.cells
+        if scell.ctype == 3 && bkey != acell.p_id
+          dist = evaluate(Euclidean(), acell.pos, bcell.pos)
+          if cont.synapse_formation(dist, bias)
+            model.synapse[akey] = skey
+            model.synapse_weights[akey] = 0.0
+            break
           end
         end
       end
-      if haskey(akey, model.synapse)
-        soma = model.cells[model.synapse[akey]]
-        amorphs = [itp[[acell.pos[:];m]...] for m in 1:N_MORPHS]
-        smorphs = [itp[[soma.pos[:];m]...] for m in 1:N_MORPHS]
-        model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, bias)
-        if ~synapse_survival(model.synapse_weights[akey])
-          apoptosis!(model, acell)
-        end
+    end
+    # potentially with new synapse, update weight
+    if haskey(akey, model.synapse)
+      soma = model.cells[model.synapse[akey]]
+      amorphs = [itp[[acell.pos[:];m]...] for m in 1:N_MORPHS]
+      smorphs = [itp[[soma.pos[:];m]...] for m in 1:N_MORPHS]
+      model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, bias)
+      if ~synapse_survival(model.synapse_weights[akey])
+        apoptosis!(model, acell)
       end
     end
   end
