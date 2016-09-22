@@ -103,16 +103,10 @@ profile_graph(cell_movement, funcname, outlabels, inlabels, infuns, inform)
 
 funcname = "synapse_weight"
 outlabels = ["weight"]
-inlabels = [["sm$i" for i=1:4];["am$i" for i=1:4];["sp$i" for i=1:4];["ap$i" for i=1:4]]
-infuns = [[x->mean(DIMS)*rand() for i=1:8];[x->rand(1:4) for i=1:8]]
-inform = x->(Array{Float64}(x[1:4]),Array{Float64}(x[5:8]),Array{Int64}(x[9:12]),Array{Int64}(x[13:16]))
-profile_graph(synapse_weight, funcname, outlabels, inlabels, infuns, inform)
-
-funcname = "reward"
-outlabels = ["weight"]
-inlabels = [["sm$i" for i=1:4];["am$i" for i=1:4];["sp$i" for i=1:4];["ap$i" for i=1:4]]
-infuns = [[x->mean(DIMS)*rand() for i=1:8];[x->rand(1:4) for i=1:8]]
-inform = x->(Array{Float64}(x[1:4]),Array{Float64}(x[5:8]),Array{Int64}(x[9:12]),Array{Int64}(x[13:16]))
+inlabels = [["sm$i" for i=1:4];["am$i" for i=1:4];["sp$i" for i=1:4];["ap$i" for i=1:4];"reward"]
+infuns = [[x->mean(DIMS)*rand() for i=1:8];[x->rand(1:4) for i=1:8];x->rand()]
+inform = x->(Array{Float64}(x[1:4]),Array{Float64}(x[5:8]),Array{Int64}(x[9:12]),Array{Int64}(x[13:16]),
+             Float64(x[17]))
 profile_graph(synapse_weight, funcname, outlabels, inlabels, infuns, inform)
 
 # funcname = "synapse_formation"

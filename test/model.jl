@@ -1,9 +1,10 @@
 using Base.Test
 using StatsBase
-using Gadfly
-using Colors
+using Plots
+gr()
 
 include("../src/model.jl")
+include("../src/graph.jl")
 
 function add_cells()
   m = Model()
@@ -147,7 +148,30 @@ end
 function handwritten_rules()
   model = Model()
   cont = Controller()
-  for i = 1:10
+  anim = @animate for counter=1:50
     step!(model, cont)
+    poses = Array{Float64}(length(model.cells), N_D+1)
+    i = 1
+    for (ck, cell) in model.cells
+      poses[i,:] = [cell.pos[1:3];Float64(cell.ctype/4.0)]
+      i+=1
+    end
+    scatter(poses[:,1], poses[:,2], poses[:,3], color=poses[:,4], legend=:none,
+         xlims=(1,DIMS[1]), ylims=(1,DIMS[2]), zticks=(1,DIMS[3]),
+         xticks=1:1:DIMS[1], yticks=1:1:DIMS[2], zticks=1:1:DIMS[3])
+    for (sk, s) in model.soma_axons
+      for a in model.soma_axons[sk]
+        ps = [[model.cells[sk].pos[i];model.cells[a].pos[i]] for i=1:3]
+        plot!(ps[1], ps[2], ps[3], color=:blue, legend=:none)
+      end
+    end
+    for (a, s) in model.synapse
+      ps = [[model.cells[s].pos[i];model.cells[a].pos[i]] for i=1:3]
+      plot!(ps[1], ps[2], ps[3], color=:green, legend=:none)
+    end
   end
+  gif(anim, "/tmp/anim_cells.gif", fps=6)
+  # graph_update!(model)
+  # println(graph_eval(model))
+  model
 end

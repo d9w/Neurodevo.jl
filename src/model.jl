@@ -86,7 +86,7 @@ function apoptosis!(model::Model, cell::Cell)
     delete!(model.synapse, cell.id)
     delete!(model.synapse_weights, cell.id)
     soma_id = cell.p_id
-    if cell.p_id in keys(model.soma_axons)
+    if haskey(model.soma_axons, cell.p_id)
       soma_axons = model.soma_axons[cell.p_id]
       deleteat!(soma_axons, findin(soma_axons, cell.id))
     end
@@ -173,7 +173,8 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       soma = model.cells[model.synapse[akey]]
       smorphs = convert(Array{Float64},[itp[[soma.pos[:];m]...] for m in 1:N_MORPHS])
       amorphs = convert(Array{Float64},[itp[[acell.pos[:];m]...] for m in 1:N_MORPHS])
-      model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params)
+      #TODO: include reinforcement signal as reward input
+      model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, 0.0)
       if ~cont.synapse_survival(model.synapse_weights[akey])
         apoptosis!(model, acell)
       end

@@ -22,15 +22,15 @@ function division(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Ve
   stationary = cell_velocity < 0.1
   if stationary
     if cell_type == 1
-      if morphogens[cell_params[3]] < 1/2*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
+      if morphogens[cell_params[3]] < 1/3*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
         dec = 1
-      elseif morphogens[cell_params[3]] > morphogens[cell_params[1]] + morphogens[cell_params[2]]
+      elseif morphogens[cell_params[3]] > 1/2*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
         dec = 2
       end
     elseif cell_type == 2
       if morphogens[cell_params[1]] < 1/2*morphogens[cell_params[3]]
         dec = 1
-      elseif morphogens[cell_params[1]] > 2*morphogens[cell_params[3]]
+      elseif morphogens[cell_params[1]] > morphogens[cell_params[3]]
         dec = 2
       end
     elseif cell_type == 3
@@ -171,8 +171,9 @@ update to synaptic weight
 applied to each possible synapse (soma,axon pair) at each timestep
 """
 function synapse_weight(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                        soma_params::Vector{Int64}, axon_params::Vector{Int64})
-  soma_morphs[soma_params[1]]+axon_morphs[axon_params[1]]-soma_morphs[soma_params[2]]-axon_morphs[axon_params[2]]
+                        soma_params::Vector{Int64}, axon_params::Vector{Int64}, reward::Float64)
+  (1.0 + reward) * (soma_morphs[soma_params[1]]+axon_morphs[axon_params[1]]
+                    -soma_morphs[soma_params[2]]-axon_morphs[axon_params[2]])
 end
 
 """
@@ -180,20 +181,8 @@ synaptic survival, true if the synapse survives
 Applied to each synapse at each timestep
 """
 function synapse_survival(synapse_weight::Float64)
-  synapse.weight >= 0
+  synapse_weight >= 0
 end
-
-"""
-synaptic weight modification based on reward
-applied to each synapse upon reward signal, requires supervisor
-"""
-function reward(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                soma_params::Vector{Int64}, axon_params::Vector{Int64})
-  # use morphogens to detect if synapse is being inhibited or enhanced
-  # reinforce that behavior
-  2*synapse_weight(soma_morphs, axon_morphs, soma_params, axon_params)
-end
-
 
 function Controller()
   Controller(division, child_type, child_params, child_position, morphogen_diff, cell_movement,
