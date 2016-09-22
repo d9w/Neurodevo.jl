@@ -5,59 +5,37 @@ type Controller
   child_type::Function
   child_params::Function
   child_position::Function
+  apoptosis::Function
   morphogen_diff::Function
   cell_movement::Function
   synapse_formation::Function
   synapse_weight::Function
   synapse_survival::Function
-  reward::Function
 end
 
 """
-determines if a cell should divide by and left or right by an output in 0:2, [null,left,right]
+determines if a cell should divide
 applied at each time step for each cell
 """
 function division(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, cell_velocity::Float64)
-  dec = 0
   stationary = cell_velocity < 0.1
-  if stationary
-    if cell_type == 1
-      if morphogens[cell_params[3]] < 1/3*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
-        dec = 1
-      elseif morphogens[cell_params[3]] > 1/2*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
-        dec = 2
-      end
-    elseif cell_type == 2
-      if morphogens[cell_params[1]] < 1/2*morphogens[cell_params[3]]
-        dec = 1
-      elseif morphogens[cell_params[1]] > morphogens[cell_params[3]]
-        dec = 2
-      end
-    elseif cell_type == 3
-      if morphogens[cell_params[1]] < 1/3*morphogens[cell_params[2]]
-        dec = 1
-      elseif morphogens[cell_params[1]] > 2*morphogens[cell_params[2]]
-        dec = 2
-      end
-    elseif cell_type == 4
-      if morphogens[cell_params[1]] < 1/3*morphogens[cell_params[2]]
-        dec = 1
-      elseif morphogens[cell_params[1]] > 2*morphogens[cell_params[2]]
-        dec = 2
-      end
-    end
-  end
-  dec
+  otherm = [4,2,3,3]
+  stationary && morphogens[cell_params[otherm[cell_type]]] > mean(morphogens)
 end
 
 """
 child cell type, int in 1:4
 applied upon positive division decision
 """
-function child_type(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, branch_left::Bool)
-  right = [2, 2, 0, 0]
-  left = [3, 0, 4, 4]
-  branch_left ? left[cell_type] : right[cell_type]
+function child_type(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64})
+  ctypes = [3,2,4,4]
+  ctype = ctypes[cell_type]
+  if cell_type == 1
+    if morphogens[cell_params[3]] < 1/5*(morphogens[cell_params[1]] + morphogens[cell_params[2]])
+      ctype = 2
+    end
+  end
+  ctype
 end
 
 """
@@ -110,13 +88,24 @@ function child_position(morphogens::Vector{Float64}, parent_cell_type::Int64, pa
   ant = [2,1,2,2]
   maxm = maximum(morphogens)
   supportm = morphogens[parent_cell_params[support[parent_cell_type]]]
-  antm = morphogens[parent_cell_params[support[parent_cell_type]]]
-  0.05*(supportm*sin(1:N_D) - antm*cos(1:N_D))/maxm
+  antm = morphogens[parent_cell_params[ant[parent_cell_type]]]
+  0.1*(supportm*sin(1:N_D) - antm*cos(1:N_D))/maxm
+end
+
+"""
+apoptosis, programmed cell death
+applied for each cell every each time step
+"""
+function apoptosis(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, cell_velocity::Float64)
+  stationary = cell_velocity < 0.1
+  otherm = [4,2,3,3]
+  scale = [0.05,1.0,0.1,0.3]
+  stationary && (morphogens[cell_params[otherm[cell_type]]] < scale[cell_type]*mean(morphogens))
 end
 
 """
 morphogen diffusion
-applied for each cell at each grid point
+applied for each cell at each grid point every time step
 """
 function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64}, dist::Float64)
   diff = 0.0
@@ -185,6 +174,6 @@ function synapse_survival(synapse_weight::Float64)
 end
 
 function Controller()
-  Controller(division, child_type, child_params, child_position, morphogen_diff, cell_movement,
-             synapse_formation, synapse_weight, synapse_survival, reward)
+  Controller(division, child_type, child_params, child_position, apoptosis, morphogen_diff, cell_movement,
+             synapse_formation, synapse_weight, synapse_survival)
 end
