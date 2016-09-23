@@ -10,22 +10,30 @@ type Controller
   cell_movement::Function
   synapse_formation::Function
   synapse_weight::Function
-  synapse_survival::Function
+  spike::Function
+end
+
+type CellInputs
+  id::Float64
+  p_id::Float64
+  ctype::Int64
+  params::Vector{Int64}
+  ntconc::Float64
 end
 
 """
 determines if a cell should divide
 applied at each time step for each cell
+return 1 bool
 """
-function division(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, cell_velocity::Float64)
-  stationary = cell_velocity < 0.01
-  if stationary
+function division(morphogens::Vector{Float64}, cell::CellInputs)
+  if cell.id > 0.5
     otherm = [4,2,3,3]
     lower_scale = [1.6,0.8,0.8,0.8]
     upper_scale = [1.8,1.0,1.1,1.1]
-    morph = morphogens[cell_params[otherm[cell_type]]]
+    morph = morphogens[cell.params[otherm[cell.ctype]]]
     mm = mean(morphogens)
-    return (morph > lower_scale[cell_type] * mm) && (morph < upper_scale[cell_type] * mm)
+    return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
   else
     return false
   end
@@ -34,12 +42,13 @@ end
 """
 child cell type, int in 1:4
 applied upon positive division decision
+return 1 int in 1:N_CTYPES
 """
-function child_type(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64})
+function child_type(morphogens::Vector{Float64}, cell::CellInputs)
   ctypes = [3,2,4,4]
-  ctype = ctypes[cell_type]
-  if cell_type == 1
-    if (morphogens[cell_params[1]] + morphogens[cell_params[2]]) < 1.5*morphogens[cell_params[3]]
+  ctype = ctypes[cell.ctype]
+  if cell.ctype == 1
+    if (morphogens[cell.params[1]] + morphogens[cell.params[2]]) < 1.5*morphogens[cell.params[3]]
       ctype = 2
     end
   end
@@ -49,23 +58,24 @@ end
 """
 child cell params
 Applied upon positive division decision
+return N_PARAMS int in 1:N_MORPHS
 """
-function child_params(morphogens::Vector{Float64}, pcell_type::Int64, pcell_params::Vector{Int64}, ccell_type::Int64)
+function child_params(morphogens::Vector{Float64}, cell::CellInputs, ccell.ctype::Int64)
   params = Array{Int64}(4)
   smorph = +(morphogens...)
   n_m = length(morphogens)
   maxv, maxm = findmax(morphogens)
   minv, minm = findmin(morphogens)
-  if ccell_type == 1
-    params[1] = mod(maxm + minm, n_m) + 1
+  if ccell.ctype == 1
+    params[1] = maxm + minm
     params[2] = maxm
     params[3] = minm
     params[4] = 1+convert(Int64,floor((n_m-1.0)*morphogens[params[3]]/smorph))
-  elseif ccell_type == 2
-    if pcell_type == 1
-      params[1] = pcell_params[morphogens[pcell_params[1]] > morphogens[pcell_params[2]] ? 1 : 2]
+  elseif ccell.ctype == 2
+    if pcell.ctype == 1
+      params[1] = pcell.params[morphogens[pcell.params[1]] > morphogens[pcell.params[2]] ? 1 : 2]
       params[2] = 1+convert(Int64,floor((n_m-1.0)*(smorph-morphogens[params[1]])/smorph))
-      params[3] = pcell_params[3]
+      params[3] = pcell.params[3]
       params[4] = 1+convert(Int64,floor((n_m-1.0)*morphogens[params[3]]/smorph))
     else
       params[1] = maxm
@@ -73,47 +83,49 @@ function child_params(morphogens::Vector{Float64}, pcell_type::Int64, pcell_para
       params[3] = minm
       params[4] = 1+convert(Int64,floor((n_m-1.0)*morphogens[params[3]]/smorph))
     end
-  elseif ccell_type == 3
+  elseif ccell.ctype == 3
     params[1] = maxm
     params[2] = minm
-    params[3] = mod(pcell_params[4] + minm, n_m) + 1
-    params[4] = mod(pcell_params[3] + maxm, n_m) + 1
-  elseif ccell_type == 4
+    params[3] = mod(pcell.params[4] + minm, n_m) + 1
+    params[4] = mod(pcell.params[3] + maxm, n_m) + 1
+  elseif ccell.ctype == 4
     params[1] = minm
     params[2] = maxm
-    params[3] = mod(pcell_params[4] + minm, n_m) + 1
-    params[4] = mod(pcell_params[3] + maxm, n_m) + 1
+    params[3] = mod(pcell.params[4] + minm, n_m) + 1
+    params[4] = mod(pcell.params[3] + maxm, n_m) + 1
   end
   @assert all(x->(x>=1)&&(x<=4), params)
+  #TODO: mod all by N_M, in model
   params
 end
 
 """
 child cell position, applied as a diff of the parent cell position
 Applied upon positive division decision
+return N_D floats
 """
-function child_position(morphogens::Vector{Float64}, parent_cell_type::Int64, parent_cell_params::Vector{Int64})
+function child_position(morphogens::Vector{Float64}, pcell::CellInputs)
   support = [1,3,1,1]
   ant = [2,1,2,2]
   maxm = maximum(morphogens)
-  supportm = morphogens[parent_cell_params[support[parent_cell_type]]]
-  antm = morphogens[parent_cell_params[ant[parent_cell_type]]]
+  supportm = morphogens[parent_cell.params[support[parent_cell.ctype]]]
+  antm = morphogens[parent_cell.params[ant[parent_cell.ctype]]]
   0.01*(sin(supportm/maxm*(1:N_D)) - cos(antm/maxm*(1:N_D)))
 end
 
 """
 apoptosis, programmed cell death
 applied for each cell every each time step
+return 1 bool
 """
-function apoptosis(morphogens::Vector{Float64}, cell_type::Int64, cell_params::Vector{Int64}, cell_velocity::Float64)
-  stationary = cell_velocity < 0.1
-  if stationary
+function apoptosis(morphogens::Vector{Float64}, cell::CellInputs)
+  if cell.id > 0.5
     otherm = [1,3,1,1]
     lower_scale = [0.05,1.4,0.1,0.5]
     upper_scale = [0.06,5.0,0.3,0.7]
-    morph = morphogens[cell_params[otherm[cell_type]]]
+    morph = morphogens[cell.params[otherm[cell.ctype]]]
     mm = mean(morphogens)
-    return (morph > lower_scale[cell_type] * mm) && (morph < upper_scale[cell_type] * mm)
+    return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
   else
     return false
   end
@@ -122,19 +134,20 @@ end
 """
 morphogen diffusion
 applied for each cell at each grid point every time step
+return N_M floats
 """
-function morphogen_diff(n_m::Int64, morphogen::Int64, cell_type::Int64, cell_params::Vector{Int64}, dist::Float64)
+function morphogen_diff(n_m::Int64, morphogen::Int64, dist::Float64, cell::CellInputs)
   diff = 0.0
   factor = 0.0
-  if cell_type == 1 || cell_type == 3
-    if cell_params[3] == morphogen
-      factor = cell_params[4] / n_m
+  if cell.ctype == 1 || cell.ctype == 3
+    if cell.params[3] == morphogen
+      factor = cell.params[4] / n_m
     end
-  elseif cell_type == 2
-    if cell_params[3] == morphogen
-      factor = cell_params[4] / n_m
-    elseif cell_params[1] == morphogen
-      factor = -cell_params[2] / n_m
+  elseif cell.ctype == 2
+    if cell.params[3] == morphogen
+      factor = cell.params[4] / n_m
+    elseif cell.params[1] == morphogen
+      factor = -cell.params[2] / n_m
     end
   end
   if factor != 0.0
@@ -146,24 +159,18 @@ end
 """
 the diff in position of a cell
 applied at each time step for each cell
+return N_D floats
 """
-function cell_movement(morphogens::Vector{Float64}, gradients::Array{Float64}, cell_type::Int64,
-                       cell_params::Vector{Int64}, cell_velocity::Float64)
+function cell_movement(morphogens::Vector{Float64}, gradients::Array{Float64}, cell::CellInputs)
   velocity = [0.05, 0.005, 0.01, 0.1]
-  v = velocity[cell_type]
+  v = velocity[cell.ctype]
   new_pos = zeros(N_D)
   if v > 0.0
-    if cell_velocity > 0.0
-      v = v/cell_velocity
-    else
-      v = 1.0
-    end
     mg = maximum(gradients)
-    # calculate new position
     follow = [1, 1, 1, 3]
     repel = [2, 3, 2, 4]
-    follow_morph = cell_params[follow[cell_type]]
-    repel_morph = cell_params[repel[cell_type]]
+    follow_morph = cell.params[follow[cell.ctype]]
+    repel_morph = cell.params[repel[cell.ctype]]
     new_pos += v/mg .* vec(gradients[follow_morph,:] - gradients[repel_morph,:])
   end
   new_pos
@@ -172,22 +179,16 @@ end
 """
 determines if a synapse is formed, true if formed
 applied to each axon, soma pair not in a synapse at each timestep
+return 1 bool
 """
-function synapse_formation(dist::Float64, acell_type::Int64, acell_params::Array{Int64}, bcell_type::Int64,
-                           bcell_params::Array{Int64})
+function synapse_formation(dist::Float64, acell::CellInput, bcell::CellInputs)
   form = false
-  if dist < 0.1
-    if acell_type == 3
-      if bcell_type == 4
-        if acell_params[1] == bcell_params[1] || acell_params[2] == bcell_params[2]
-          form = true
-        end
-      end
-    elseif acell_type == 4
-      if bcell_type == 3
-        if acell_params[1] == bcell_params[1] || acell_params[2] == bcell_params[2]
-          form = true
-        end
+  if acell.ctype == 4
+    if acell.p_id == bcell.id
+      form = true
+    else
+      if dist < 0.1 && bcell.ctype == 3
+        form = true
       end
     end
   end
@@ -197,22 +198,30 @@ end
 """
 update to synaptic weight
 applied to each possible synapse (soma,axon pair) at each timestep
+return 1 float
 """
-function synapse_weight(soma_morphs::Vector{Float64}, axon_morphs::Vector{Float64},
-                        soma_params::Vector{Int64}, axon_params::Vector{Int64}, reward::Float64)
-  (1.0 + reward) * (soma_morphs[soma_params[1]]+axon_morphs[axon_params[1]]
-                    -soma_morphs[soma_params[2]]-axon_morphs[axon_params[2]])
+function synapse_weight(a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs, bcell::CellInputs,
+                        reward::Float64)
+  weight = 0.0
+  if acell.ctype == 3
+    if bcell.ctype == 4
+      weight = (1.0 + reward) * ((a_morphs[acell.params[1]]+b_morphs[bcell.params[1]])
+                                 -(a_morphs[acell.params[2]]+b_morphs[bcell.params[2]]))
+    end
+  end
+  weight
 end
 
 """
-synaptic survival, true if the synapse survives
-Applied to each synapse at each timestep
+determines if a cell spikes
+applied to each receptor cell of a synapse at each timestep
+return 1 bool
 """
-function synapse_survival(synapse_weight::Float64)
-  synapse_weight >= 0
+function spike(cell::CellInputs)
+  (cell.ctype == 3 && cell.ntconc > 1.0) ||  cell.ctype == 4 && cell.ntconc > 0.0)
 end
 
 function Controller()
   Controller(division, child_type, child_params, child_position, apoptosis, morphogen_diff, cell_movement,
-             synapse_formation, synapse_weight, synapse_survival)
+             synapse_formation, synapse_weight, spike)
 end

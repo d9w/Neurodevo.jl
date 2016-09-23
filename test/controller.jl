@@ -5,8 +5,8 @@ using Colors
 include("../src/controller.jl")
 include("../src/constants.jl")
 
-const global n_samples = 1000
-const global n_trials = 1000
+const global n_samples = 10
+const global n_trials = 10
 
 function profile_graph(cont_func, funcname, outlabels, inlabels, infuns, inform)
   println(funcname)
@@ -59,12 +59,21 @@ function profile_graph(cont_func, funcname, outlabels, inlabels, infuns, inform)
           (10*length(outlabels))cm, 20cm), hstack(ps...))
 end
 
+function rand_cell()
+  labels = ["id";"p_id";"type";["p$i" for i=1:4];"nt"]
+  infuns = [x->rand();x->rand();x->rand(1:N_CTYPES),[x->rand(1:4) for i=1:4],x->rand()]
+  inform = x->CellInputs(Float64(x[1]), Float64(x[2]), Int64(x[3]), Array{Int64}(x[4:4+N_PARAMS]),
+                         Float64(x[5+N_PARAMS]))
+  labels, infuns, inform
+end
+
 function plot_division(cont::Controller)
   funcname = "division"
   outlabels = ["division"]
-  inlabels = [["m$m" for m=1:4];"c";["p$i" for i=1:4];"velo"]
-  infuns = [[x->mean(DIMS)*rand() for i=1:4];x->rand(1:4);[x->rand(1:4) for i=1:4];x->rand()]
-  inform = x->(Array{Float64}(x[1:4]),Int64(x[5]),Array{Int64}(x[6:9]),Float64(x[10]))
+  cell_labels, cell_infuns, cell_inform = rand_cell()
+  inlabels = [["m$m" for m=1:N_MORPHS];cell_labels[:]]
+  infuns = [[x->mean(DIMS)*rand() for i=1:N_MORPHS];cell_infuns[:]]
+  inform = x->(Array{Float64}(x[1:N_MORPHS]),cell_inform(x[N_MORPHS+1:N_MORPHS+N_PARAMS+6]))
   profile_graph(cont.division, funcname, outlabels, inlabels, infuns, inform)
 end
 
@@ -144,12 +153,12 @@ end
 function plot_all()
   c = Controller()
   plot_division(c)
-  plot_child_type(c)
-  plot_child_params(c)
-  plot_child_position(c)
-  plot_apoptosis(c)
-  plot_morphogen_diff(c)
-  plot_cell_movement(c)
-  plot_synapse_weight(c)
+  # plot_child_type(c)
+  # plot_child_params(c)
+  # plot_child_position(c)
+  # plot_apoptosis(c)
+  # plot_morphogen_diff(c)
+  # plot_cell_movement(c)
+  # plot_synapse_weight(c)
   # plot_synapse_fomation(c)
 end

@@ -11,24 +11,30 @@ type Cell
   pos::Vector{Float64}
   params::Vector{Int64}
   ctype::Int64
-  velocity::Float64
+  ntcont::Float64
 end
 
 function Cell(id::Int64)
   pos = 1.0.+rand(length(DIMS)).*(DIMS-1.0)
   params = rand(1:N_MORPHS, N_PARAMS)
   ctype = 1 # neural stem cell
-  Cell(0, id, pos, params, ctype, 0.0)
+  Cell(0, id, pos, params, ctype, 0.0, 1.0)
+end
+
+type Synapse
+  c1::Cell
+  c2::Cell
+  weight::Float64
 end
 
 type Model
   morphogens::Array{Float64}
   grid::Array{Int64}
   cells::Dict{Int64, Cell}
+  synapses::Array{Synapse}
   soma_axons::Dict{Int64, Vector{Int64}}
   synapse::Dict{Int64, Int64}
   synapse_weights::Dict{Int64, Float64}
-  synapse_graph::DiGraph
 end
 
 function Model()
@@ -62,13 +68,16 @@ function Model()
   soma_axons = Dict{Int64, Vector{Int64}}()
   synapse = Dict{Int64, Int64}()
   synapse_weights = Dict{Int64, Float64}()
-  synapse_graph = DiGraph()
-  entropy = 0
-  Model(morphogens, grid, cells, soma_axons, synapse, synapse_weights, synapse_graph)
+  Model(morphogens, grid, cells, soma_axons, synapse, synapse_weights)
 end
 
 function maxid(model::Model)
   maximum(keys(model.cells))
+end
+
+function cell_inputs(model::Model, cell::Cell)
+  mid = maxid(model)
+  CellInputs(cell.id/mid, cell.p_id/mid, cell.ctype, cell.params, cell.ntconc)
 end
 
 function add_cell!(model::Model, cell::Cell)
@@ -142,9 +151,6 @@ function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params).*DIMS
       pos = min(max(pos, [1.,1.,1.]), DIMS)
       p_id = cell.id
-      if cell.ctype == 4 && ctype == 4
-        p_id = cell.p_id
-      end
       new_cell = Cell(p_id, id, pos, params, ctype, 0.0)
       append!(new_cells, [new_cell])
     end
@@ -187,9 +193,6 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       amorphs = Array{Float64}([max(itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       #TODO: include reinforcement signal as reward input
       model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, 0.0)
-      if ~cont.synapse_survival(model.synapse_weights[akey])
-        apoptosis!(model, acell)
-      end
     end
   end
 end
@@ -203,13 +206,12 @@ function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       morphs[m] = max(v,0.0)
       grad[m,:] = g[1:N_D]
     end
-    if ~in(ckey, [collect(keys(model.synapse));collect(values(model.synapse))])
-      mov = cont.cell_movement(morphs, grad, cell.ctype, cell.params, cell.velocity)
-      if any(x->x>0, mov)
-        mov = mov .* DIMS
-        cell.velocity = mapreduce(x->x^2, +, mov)
-        cell.pos = min(max(cell.pos+mov, [1.,1.,1.]), DIMS)
-      end
+    mov = cont.cell_movement(morphs, grad, cell.ctype, cell.params, cell.velocity)
+    if any(x->x>0, mov)
+      mov = mov .* DIMS
+      new_pos = min(max(cell.pos+mov, [1.,1.,1.]), DIMS)
+      cell.velocity = mapreduce(x->x^2, +, new_pos-cell.pos)
+      cell.pos = new_pos
     end
   end
 end
