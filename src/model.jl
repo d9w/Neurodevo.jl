@@ -39,10 +39,25 @@ function Model()
     i += 1
   end
   morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
+  param_permutes = Array{Int64}(N_MORPHS^N_PARAMS, N_PARAMS)
+  i = 1
+  for c = Counter([N_MORPHS for m=1:N_PARAMS])
+    param_permutes[i,:] = c
+    i += 1
+  end
+  n_cuts = ceil(Int64,N_MORPHS^(N_PARAMS/N_D))
+  cuts = [linspace(1,DIMS[d],n_cuts) for d=1:N_D]
+  i = 1
   cells = Dict{Int64, Cell}()
-  for i=1:N_NSC
-    cell = Cell(i)
-    cells[i] = cell
+  for c = Counter([n_cuts for m=1:N_D])
+    if i <= size(param_permutes)[1]
+      pos = convert(Array{Float64},[cuts[d][c[d]] for d=1:N_D])
+      params = vec(param_permutes[i,:])
+      cells[i] = Cell(0, i, pos, params, 1, 0.0)
+      i += 1
+    else
+      break
+    end
   end
   soma_axons = Dict{Int64, Vector{Int64}}()
   synapse = Dict{Int64, Int64}()
@@ -85,7 +100,6 @@ function apoptosis!(model::Model, cell::Cell)
   elseif cell.ctype == 4
     delete!(model.synapse, cell.id)
     delete!(model.synapse_weights, cell.id)
-    soma_id = cell.p_id
     if haskey(model.soma_axons, cell.p_id)
       soma_axons = model.soma_axons[cell.p_id]
       deleteat!(soma_axons, findin(soma_axons, cell.id))
@@ -120,34 +134,31 @@ function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
   apop = Array{Int64}(0)
   new_cells = Array{Cell}(0)
   for (ckey,cell) in model.cells
-    morphogens = Array{Float64}([itp[[cell.pos[:];m]...] for m in 1:N_MORPHS])
-    branch = cont.division(morphogens, cell.ctype, cell.params, cell.velocity)
-    if branch > 0
-      branch_dir = branch == 1
-      ctype = cont.child_type(morphogens, cell.ctype, cell.params, branch_dir)
-      if ctype == 0
-        append!(apop, [cell.id])
-      else
-        id = maxid(model) + length(new_cells) + 1
-        params = cont.child_params(morphogens, cell.ctype, cell.params, ctype)
-        pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params).*DIMS
-        pos = min(max(pos, [1.,1.,1.]), DIMS)
-        p_id = cell.id
-        if cell.ctype == 4
-          p_id = cell.p_id
-        end
-        new_cell = Cell(p_id, id, pos, params, ctype, 0.0)
-        append!(new_cells, [new_cell])
+    morphogens = Array{Float64}([max(0.0,itp[[cell.pos[:];m]...]) for m in 1:N_MORPHS])
+    if cont.division(morphogens, cell.ctype, cell.params, cell.velocity)
+      ctype = cont.child_type(morphogens, cell.ctype, cell.params)
+      id = maxid(model) + length(new_cells) + 1
+      params = cont.child_params(morphogens, cell.ctype, cell.params, ctype)
+      pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params).*DIMS
+      pos = min(max(pos, [1.,1.,1.]), DIMS)
+      p_id = cell.id
+      if cell.ctype == 4 && ctype == 4
+        p_id = cell.p_id
       end
+      new_cell = Cell(p_id, id, pos, params, ctype, 0.0)
+      append!(new_cells, [new_cell])
     end
+    if cont.apoptosis(morphogens, cell.ctype, cell.params, cell.velocity)
+      append!(apop, [cell.id])
+    end
+  end
+  for n in new_cells
+    add_cell!(model, n)
   end
   for a in apop
     if haskey(model.cells, a) # soma deletion will cause axon deletion
       apoptosis!(model, model.cells[a])
     end
-  end
-  for n in new_cells
-    add_cell!(model, n)
   end
 end
 
@@ -159,8 +170,9 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
     if ~haskey(model.synapse, akey)
       for (skey, scell) in somas
         if skey != acell.p_id
-          dist = evaluate(Euclidean(), acell.pos, scell.pos)
-          if cont.synapse_formation(dist)
+          dist = evaluate(Euclidean(), acell.pos, scell.pos)/mean(DIMS)
+          if cont.synapse_formation(dist, acell.ctype, acell.params, scell.ctype, scell.params)
+            print(".")
             model.synapse[akey] = skey
             model.synapse_weights[akey] = 0.0
             break
@@ -171,8 +183,8 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
     # potentially with new synapse, update weight
     if haskey(model.synapse, akey)
       soma = model.cells[model.synapse[akey]]
-      smorphs = convert(Array{Float64},[itp[[soma.pos[:];m]...] for m in 1:N_MORPHS])
-      amorphs = convert(Array{Float64},[itp[[acell.pos[:];m]...] for m in 1:N_MORPHS])
+      smorphs = Array{Float64}([max(itp[[soma.pos[:];m]...],0.0) for m in 1:N_MORPHS])
+      amorphs = Array{Float64}([max(itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       #TODO: include reinforcement signal as reward input
       model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, 0.0)
       if ~cont.synapse_survival(model.synapse_weights[akey])
@@ -188,11 +200,11 @@ function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
     grad = Array{Float64}(N_MORPHS, N_D)
     for m = 1:N_MORPHS
       v,g = valgrad(itp, [cell.pos[:];m]...)
-      morphs[m] = v
+      morphs[m] = max(v,0.0)
       grad[m,:] = g[1:N_D]
     end
     if ~in(ckey, [collect(keys(model.synapse));collect(values(model.synapse))])
-      mov = cont.cell_movement(morphs, grad, cell.ctype, cell.params)
+      mov = cont.cell_movement(morphs, grad, cell.ctype, cell.params, cell.velocity)
       if any(x->x>0, mov)
         mov = mov .* DIMS
         cell.velocity = mapreduce(x->x^2, +, mov)

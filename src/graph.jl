@@ -1,34 +1,32 @@
 using LightGraphs
 
 function graph_update!(model::Model)
-  model.synapses = DiGraph(length(model.neurons))
-  for i=1:length(model.neurons)
-    neuron = model.neurons[i]
-    for axon in neuron.axons
-      for j=1:length(model.neurons)
-        if evaluate(Euclidean(), axon.position, model.neurons[j].position) < constants.neuron_size
-          add_edge!(model.synapses, i, j)
-        end
+  id = 1
+  id_mapping = Dict{Int64, Int64}()
+  for (a,s2) in model.synapse
+    for s in [model.cells[a].p_id;s2]
+      if ~haskey(id_mapping, s)
+        id_mapping[s] = id
+        id += 1
       end
     end
+  end
+  model.synapse_graph = DiGraph(id)
+  for (a,s) in model.synapse
+    add_edge!(model.synapse_graph, id_mapping[model.cells[a].p_id], id_mapping[s])
   end
 end
 
 function graph_eval(model::Model)
-  cc = global_clustering_coefficient(model.synapses)
-  communities = strongly_connected_components(model.synapses)
-  divis = ones(Int64, nv(model.synapses))
+  cc = global_clustering_coefficient(model.synapse_graph)
+  communities = strongly_connected_components(model.synapse_graph)
+  divis = ones(Int64, nv(model.synapse_graph))
   for comm=1:length(communities)
     for vert in comm
       divis[vert] = comm
     end
   end
-  modul = modularity(Graph(model.synapses), divis)
-  dens = density(model.synapses)
-  n_axons = 0
-  for n in model.neurons
-    n_axons += length(n.axons)
-  end
-  n_axons /= length(model.neurons)
-  (nv(model.synapses), ne(model.synapses), n_axons, cc, length(communities), modul, dens)
+  modul = modularity(Graph(model.synapse_graph), divis)
+  dens = LightGraphs.density(model.synapse_graph)
+  (nv(model.synapse_graph), ne(model.synapse_graph), cc, length(communities), modul, dens)
 end
