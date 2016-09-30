@@ -1,7 +1,5 @@
 using Base.Test
 using StatsBase
-using Plots
-gr()
 
 include("../src/model.jl")
 include("../src/graph.jl")
@@ -145,36 +143,36 @@ function test_all()
   print_with_color(:green, "...[passed]\n")
 end
 
-function handwritten_rules()
-  model = Model()
-  cont = Controller()
-  anim = @animate for counter=1:500
-    step!(model, cont)
-    println([[mapreduce(x->x[2].ctype==t,+,model.cells) for t=1:4];minimum(model.morphogens);maximum(model.morphogens)])
-    poses = Array{Float64}(length(model.cells), N_D+1)
-    i = 1
-    for (ck, cell) in model.cells
-      poses[i,:] = [cell.pos[1:3];Float64(cell.ctype/4.0)]
-      i+=1
-    end
-    scatter(poses[:,1], poses[:,2], poses[:,3], color=poses[:,4], legend=:none,
-         xlims=(1,DIMS[1]), ylims=(1,DIMS[2]), zticks=(1,DIMS[3]),
-         xticks=1:1:DIMS[1], yticks=1:1:DIMS[2], zticks=1:1:DIMS[3])
-    for (sk, s) in model.soma_axons
-      for a in model.soma_axons[sk]
-        ps = [[model.cells[sk].pos[i];model.cells[a].pos[i]] for i=1:3]
-        plot!(ps[1], ps[2], ps[3], color=:blue, legend=:none)
-      end
-    end
-    for (a, s) in model.synapse
-      ps = [[model.cells[s].pos[i];model.cells[model.cells[a].p_id].pos[i]] for i=1:3]
-      plot!(ps[1], ps[2], ps[3], color=:green, legend=:none)
-    end
-    if length(model.synapse) > 0
-      graph_update!(model)
-      println(graph_eval(model))
-    end
-  end
-  gif(anim, "/tmp/anim_cells.gif", fps=6)
-  model
-end
+# function handwritten_rules()
+#   model = Model()
+#   cont = Controller()
+#   anim = @animate for counter=1:500
+#     step!(model, cont)
+#     println([[mapreduce(x->x[2].ctype==t,+,model.cells) for t=1:4];minimum(model.morphogens);maximum(model.morphogens)])
+#     poses = Array{Float64}(length(model.cells), N_D+1)
+#     i = 1
+#     for (ck, cell) in model.cells
+#       poses[i,:] = [cell.pos[1:3];Float64(cell.ctype/4.0)]
+#       i+=1
+#     end
+#     scatter(poses[:,1], poses[:,2], poses[:,3], color=poses[:,4], legend=:none,
+#          xlims=(1,DIMS[1]), ylims=(1,DIMS[2]), zticks=(1,DIMS[3]),
+#          xticks=1:1:DIMS[1], yticks=1:1:DIMS[2], zticks=1:1:DIMS[3])
+#     for (sk, s) in model.soma_axons
+#       for a in model.soma_axons[sk]
+#         ps = [[model.cells[sk].pos[i];model.cells[a].pos[i]] for i=1:3]
+#         plot!(ps[1], ps[2], ps[3], color=:blue, legend=:none)
+#       end
+#     end
+#     for (a, s) in model.synapse
+#       ps = [[model.cells[s].pos[i];model.cells[model.cells[a].p_id].pos[i]] for i=1:3]
+#       plot!(ps[1], ps[2], ps[3], color=:green, legend=:none)
+#     end
+#     if length(model.synapse) > 0
+#       graph_update!(model)
+#       println(graph_eval(model))
+#     end
+#   end
+#   gif(anim, "/tmp/anim_cells.gif", fps=6)
+#   model
+# end

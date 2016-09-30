@@ -125,7 +125,7 @@ function update_morphogens!(model::Model, cont::Controller)
       for m in 1:N_MORPHS
         morph = model.morphogens[[pos;m]...]
         dist = evaluate(Euclidean(), cell.pos, pos)
-        morph += cont.morphogen_diff(N_MORPHS, m, cell.ctype, cell.params, dist)
+        morph += cont.morphogen_diff(dist, cell_inputs(cell))
         morph = max(0.0, morph)
         model.morphogens[[pos;m]...] = morph
       end
@@ -144,17 +144,17 @@ function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
   new_cells = Array{Cell}(0)
   for (ckey,cell) in model.cells
     morphogens = Array{Float64}([max(0.0,itp[[cell.pos[:];m]...]) for m in 1:N_MORPHS])
-    if cont.division(morphogens, cell.ctype, cell.params, cell.velocity)
-      ctype = cont.child_type(morphogens, cell.ctype, cell.params)
+    if cont.division(morphogens, cell_inputs(cell))
+      ctype = cont.child_type(morphogens, cell_inputs(cell))
       id = maxid(model) + length(new_cells) + 1
-      params = cont.child_params(morphogens, cell.ctype, cell.params, ctype)
-      pos = cell.pos + cont.child_position(morphogens, cell.ctype, cell.params).*DIMS
+      params = cont.child_params(morphogens, ctype, cell_inputs(cell))
+      pos = cell.pos + cont.child_position(morphogens, cell_inputs(cell)).*DIMS
       pos = min(max(pos, [1.,1.,1.]), DIMS)
       p_id = cell.id
       new_cell = Cell(p_id, id, pos, params, ctype, 0.0)
       append!(new_cells, [new_cell])
     end
-    if cont.apoptosis(morphogens, cell.ctype, cell.params, cell.velocity)
+    if cont.apoptosis(morphogens, cell_inputs(cell))
       append!(apop, [cell.id])
     end
   end
@@ -177,7 +177,7 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       for (skey, scell) in somas
         if skey != acell.p_id
           dist = evaluate(Euclidean(), acell.pos, scell.pos)/mean(DIMS)
-          if cont.synapse_formation(dist, acell.ctype, acell.params, scell.ctype, scell.params)
+          if cont.synapse_formation(dist, cell_inputs(acell), cell_inputs(scell))
             print(".")
             model.synapse[akey] = skey
             model.synapse_weights[akey] = 0.0
@@ -192,7 +192,8 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       smorphs = Array{Float64}([max(itp[[soma.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       amorphs = Array{Float64}([max(itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       #TODO: include reinforcement signal as reward input
-      model.synapse_weights[akey] += cont.synapse_weight(smorphs, amorphs, soma.params, acell.params, 0.0)
+      model.synapse_weights[akey] += cont.synapse_weight(0.0, smorphs, amorphs, cell_inputs(acell),
+                                                         cell_inputs(soma.params))
     end
   end
 end
@@ -206,7 +207,7 @@ function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       morphs[m] = max(v,0.0)
       grad[m,:] = g[1:N_D]
     end
-    mov = cont.cell_movement(morphs, grad, cell.ctype, cell.params, cell.velocity)
+    mov = cont.cell_movement(morphs, grad, cell_inputs(cell)
     if any(x->x>0, mov)
       mov = mov .* DIMS
       new_pos = min(max(cell.pos+mov, [1.,1.,1.]), DIMS)
