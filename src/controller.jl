@@ -257,7 +257,7 @@ end
 function random_controller()
   rdivision = (morphogens::Vector{Float64}, cell::CellInputs)->rand(Bool)
   rchild_type = (morphogens::Vector{Float64}, cell::CellInputs)->rand(1:N_CTYPES)
-  rchild_params = (morphogens::Vector{Float64}, pcell::CellInputs, ccell::CellInputs)->rand(1:N_MORPHS, N_PARAMS)
+  rchild_params = (morphogens::Vector{Float64}, ccell_type::Int64, pcell::CellInputs)->rand(1:N_MORPHS, N_PARAMS)
   rchild_position = (morphogens::Vector{Float64}, cell::CellInputs)->randn(N_D)
   rapoptosis = (morphogens::Vector{Float64}, cell::CellInputs)->rand(Bool)
   rmorphogen_diff = (dist::Float64, cell::CellInputs)->randn(N_MORPHS)
