@@ -29,21 +29,16 @@ end
 
 type Model
   morphogens::Array{Float64}
-  grid::Array{Int64}
   cells::Dict{Int64, Cell}
   # synapses::Array{Synapse}
   soma_axons::Dict{Int64, Vector{Int64}}
   synapse::Dict{Int64, Int64}
   synapse_weights::Dict{Int64, Float64}
+  itp::InterpGrid
 end
 
 function Model()
   i = 1
-  grid = Array{Int64}(*(DIMS...),length(DIMS))
-  for c = Counter(DIMS)
-    grid[i,:] = c
-    i += 1
-  end
   morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
   param_permutes = Array{Int64}(N_MORPHS^N_PARAMS, N_PARAMS)
   i = 1
@@ -68,7 +63,8 @@ function Model()
   soma_axons = Dict{Int64, Vector{Int64}}()
   synapse = Dict{Int64, Int64}()
   synapse_weights = Dict{Int64, Float64}()
-  Model(morphogens, grid, cells, soma_axons, synapse, synapse_weights)
+  itp = InterpGrid(morphogens, BCnil, InterpQuadratic)
+  Model(morphogens, cells, soma_axons, synapse, synapse_weights, itp)
 end
 
 function maxid(model::Model)
@@ -121,19 +117,23 @@ function apoptosis!(model::Model, cell::Cell)
 end
 
 function update_morphogens!(model::Model, cont::Controller)
-  # model.morphogens *= MORPHOGEN_DECAY
-  for i in eachindex(model.grid[:,1])
-    pos = vec(model.grid[i,:])
-    for (ckey, cell) in model.cells
-      morphs = convert(Array{Float64},[model.morphogens[[pos;m]...] for m=1:N_MORPHS])
-      dist = evaluate(Euclidean(), cell.pos, pos)
-      morphs += cont.morphogen_diff(dist, cell_inputs(model, cell))
-      morphs = max(0.0, morphs)
-      for m in 1:N_MORPHS
-        model.morphogens[[pos;m]...] = morphs[m]
+  # TODO: n-dimensionality without performance hit
+  for x in 1:DIMS[1]
+    for y in 1:DIMS[2]
+      for z in 1:DIMS[3]
+        for (ckey, cell) in model.cells
+          dist = evaluate(Euclidean(), cell.pos, [x y z])
+          morphs = cont.morphogen_diff(dist, cell_inputs(model, cell))
+          for m in 1:N_MORPHS
+            model.morphogens[x,y,z,m] += morphs[m]
+          end
+        end
       end
     end
   end
+  model.morphogens = max(0.0, model.morphogens)
+  model.itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
+  nothing
   # morphogen normalization
   # sm = [size(morphs)[1:N_D]...]
   # maxmorphs = vec(maximum(model.morphogens, collect(1:N_D)))
@@ -142,11 +142,11 @@ function update_morphogens!(model::Model, cont::Controller)
   # end
 end
 
-function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
+function cell_division!(model::Model, cont::Controller)
   apop = Array{Int64}(0)
   new_cells = Array{Cell}(0)
   for (ckey,cell) in model.cells
-    morphogens = Array{Float64}([max(0.0,itp[[cell.pos[:];m]...]) for m in 1:N_MORPHS])
+    morphogens = Array{Float64}([max(0.0,model.itp[[cell.pos[:];m]...]) for m in 1:N_MORPHS])
     if cont.division(morphogens, cell_inputs(model, cell))
       ctype = cont.child_type(morphogens, cell_inputs(model, cell))
       id = maxid(model) + length(new_cells) + 1
@@ -169,9 +169,10 @@ function cell_division!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       apoptosis!(model, model.cells[a])
     end
   end
+  nothing
 end
 
-function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
+function synapse_update!(model::Model, cont::Controller)
   somas = filter((k,v)->v.ctype==3, model.cells)
   axons = filter((k,v)->v.ctype==4, model.cells)
   for (akey, acell) in axons
@@ -191,21 +192,22 @@ function synapse_update!(model::Model, itp::Grid.InterpGrid, cont::Controller)
     # potentially with new synapse, update weight
     if haskey(model.synapse, akey)
       soma = model.cells[model.synapse[akey]]
-      smorphs = Array{Float64}([max(itp[[soma.pos[:];m]...],0.0) for m in 1:N_MORPHS])
-      amorphs = Array{Float64}([max(itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
+      smorphs = Array{Float64}([max(model.itp[[soma.pos[:];m]...],0.0) for m in 1:N_MORPHS])
+      amorphs = Array{Float64}([max(model.itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       #TODO: include reinforcement signal as reward input
       model.synapse_weights[akey] += cont.synapse_weight(0.0, smorphs, amorphs, cell_inputs(model, acell),
                                                          cell_inputs(model, soma))
     end
   end
+  nothing
 end
 
-function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
+function cell_movement!(model::Model, cont::Controller)
   for (ckey,cell) in model.cells
     morphs = Vector{Float64}(N_MORPHS)
     grad = Array{Float64}(N_MORPHS, N_D)
     for m = 1:N_MORPHS
-      v,g = valgrad(itp, [cell.pos[:];m]...)
+      v,g = valgrad(model.itp, [cell.pos[:];m]...)
       morphs[m] = max(v,0.0)
       grad[m,:] = g[1:N_D]
     end
@@ -217,19 +219,19 @@ function cell_movement!(model::Model, itp::Grid.InterpGrid, cont::Controller)
       cell.pos = new_pos
     end
   end
+  nothing
 end
 
 function step!(model::Model, cont::Controller)
   # update morphogens
   update_morphogens!(model, cont)
-  itp = InterpGrid(model.morphogens, BCnil, InterpQuadratic)
 
   # division and apoptosis
-  cell_division!(model, itp, cont)
+  cell_division!(model, cont)
 
   # synapse formation and checking
-  synapse_update!(model, itp, cont)
+  synapse_update!(model, cont)
 
   # cell movement
-  cell_movement!(model, itp, cont)
+  cell_movement!(model, cont)
 end
