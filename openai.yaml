@@ -1,5 +1,6 @@
 n_trials: 100
 n_steps: 1000
+n_hidden: 30
 envs:
   control:
   - "CartPole-v0"

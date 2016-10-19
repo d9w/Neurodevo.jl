@@ -1,8 +1,8 @@
 # SNN.jl
 # Spiking Neural Network
 
-global const V_T = 10.0
-global const V_R = -10.0
+global const V_T = -54
+global const V_R = -60
 global const α = 0.9
 global const τp = 13
 global const τm = 35
@@ -21,7 +21,7 @@ end
 type Network
   neurons::Vector{Neuron}
   inputs::Vector{Int64}
-  outpus::Vector{Int64}
+  outputs::Vector{Int64}
   weights::Array{Float64}
   t::Int64
 end
@@ -50,6 +50,7 @@ function reset(self::Network)
     n.v = 0
     n.v_in = 0
   end
+  nothing
 end
 
 function fire(self::Network, ivalues::Vector{Float64})
@@ -88,6 +89,19 @@ function weight_update(self::Network, reward::Float64=0.0)
     self.weights = self.weights .+ (reward * F .* eff)
   end
   nothing
+end
+
+function count_output(self::Network, ivalues::Vector{Float64})
+  counts = zeros(length(self.outputs))
+  for i=1:20
+    fire(self, ivalues)
+    for o in eachindex(counts)
+      if self.neurons[self.outputs[o]].spike == self.t-1
+        counts[o] += 1
+      end
+    end
+  end
+  findmax(counts)[2]
 end
 
 # function plot_reward_response()
