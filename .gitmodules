@@ -1,9 +1,0 @@
-[submodule "src/external/grgen"]
-	path = src/external/grgen
-	url = git@github.com:d9w/grgen.git
-[submodule "src/external/gaga"]
-	path = src/external/gaga
-	url = git@github.com:d9w/gaga.git
-[submodule "src/external/cxxopts"]
-	path = src/external/cxxopts
-	url = https://github.com/jarro2783/cxxopts.git

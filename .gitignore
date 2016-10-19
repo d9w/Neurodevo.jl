@@ -29,3 +29,29 @@
 
 # GAGA
 evos
+
+/*.tar.gz
+/tmp
+/dist
+/dist-extras
+/julia
+/usr
+/usr-staging
+/Make.user
+/julia-*
+/plots
+
+.juliahistory
+*.dat
+*.exe
+*.dll
+*.do
+*.o
+*.obj
+*.so
+*.dylib
+*.dSYM
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+*.ji
