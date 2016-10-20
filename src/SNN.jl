@@ -1,8 +1,30 @@
 # SNN.jl
 # Spiking Neural Network
 
-global const V_T = -54
-global const V_R = -60
+
+# configuration from Diehl & Cook, 2015. Maybe move to a yaml config
+global const v_rest_e = -0.065
+global const v_rest_i = -0.060
+global const v_reset_e = -0.065
+global const v_reset_i = -0.045
+global const v_thresh_e = -0.052
+global const v_thresh_i = -0.040
+global const refrac_e = 0.005
+global const refrac_i = 0.002
+global const input_example_time - 0.35
+global const input_rest_time = 0.15
+global const tc_pre_ee = 0.002
+global const tc_post_1_ee = 0.002
+global const tc_post_2_ee = 0.004
+global const nu_ee_pre =  0.0001
+global const nu_ee_post = 0.01
+global const wmax_ee = 1.0
+global const exp_ee_pre = 0.2
+global const exp_ee_post = 0.2
+global const STDP_offset = 0.4
+
+
+
 global const α = 0.9
 global const τp = 13
 global const τm = 35
@@ -11,11 +33,14 @@ global const τpost = 88
 global const Ap = 0.32
 global const Am = -0.16
 
+@enum NType inp enh inh
+
 type Neuron
   v::Float64
   v_in::Float64
+  theta::Float64
   spike::Int64
-  typ::Int64
+  typ::NType
 end
 
 type Network
@@ -26,8 +51,8 @@ type Network
   t::Int64
 end
 
-function Network(N_IN::Int64, N_OUT::Int64, N_HIDDEN::Int64)
-  N = N_IN + N_OUT + N_HIDDEN
+function Network(N_IN::Int64, N_ENH::Int64, N_INH::Int64)
+  N = N_IN + N_ENH + N_INH
   neurons = Vector{Neuron}(N)
   t = 0
   for i=1:N
