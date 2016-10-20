@@ -1,5 +1,4 @@
 using LightGraphs
-using Distances
 using Grid
 
 include("controller.jl")
@@ -122,8 +121,9 @@ function update_morphogens!(model::Model, cont::Controller)
     for y in 1:DIMS[2]
       for z in 1:DIMS[3]
         for (ckey, cell) in model.cells
-          dist = evaluate(Euclidean(), cell.pos, [x y z])
-          morphs = cont.morphogen_diff(dist, cell_inputs(model, cell))
+          dvec = [x y z] - cell.pos
+          # TODO: reward
+          morphs = cont.morphogen_diff(model.morphogens[x,y,z,m], dvec, cell_inputs(model, cell), 0.0)
           for m in 1:N_MORPHS
             model.morphogens[x,y,z,m] += morphs[m]
           end
@@ -180,7 +180,7 @@ function synapse_update!(model::Model, cont::Controller)
     if ~haskey(model.synapse, akey)
       for (skey, scell) in somas
         if skey != acell.p_id
-          dist = evaluate(Euclidean(), acell.pos, scell.pos)/mean(DIMS)
+          dist = euclidean(acell.pos, scell.pos)/mean(DIMS)
           if cont.synapse_formation(dist, cell_inputs(model, acell), cell_inputs(model, scell))
             model.synapse[akey] = skey
             model.synapse_weights[akey] = 0.0

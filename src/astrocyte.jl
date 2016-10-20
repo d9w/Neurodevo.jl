@@ -1,12 +1,22 @@
 # controller functions adding static astrocyte-like glial cells (ctype 2) to a soma (ctype 1) only network
 
-function astro_morphogen_diff(morphogens::Vector{Float64}, dist::Float64, cell::CellInputs)
+function astro_morphogen_diff(morphogens::Vector{Float64}, dist::Vector{Float64}, cell::CellInputs)
   diffs = -0.1*morphogens
-  if cell.ctype == 1
-    diffs[1] += cell.ntconc
+  euc = sqrt(mapreduce(x->x^2, +, dist))
+  if cell.ctype == 1 && euc < 0.01
+    # activity information for stdp-like modulation
+    diffs[1] += 0.1*cell.ntconc
   elseif cell.ctype == 2
-    diffs[2] += 0.4*(morphogens[1] - morphogens[3])
-    diffs[3] += 0.1*(morphogens[3] - morphogens[1])
+    # inactivity information for stdp-like modulation
+    diffs[2] += 0.1*(1.0-cell.ntconc)
+    if (dist[3] < 0.1 && dist[3] > -0.1) && euc > 0.01
+      # homeostasis within layers
+      diffs[3] += 0.1*cell.ntconc
+    end
+    if dist[3] < -0.1
+      # backprop communication about error and local firing
+      diffs[4] += 0.1 * morphogens[4] / (1-exp(euc)) * (morphogens[1]-morphogens[2])
+    end
   end
   diffs
 end

@@ -11,3 +11,4 @@ const global N_NSC = 20
 const global DIMS = [5, 5, 5]
 const global N_D = 3
 const global NT_SPIKE = 2.0
+const global V_T = 1.0
