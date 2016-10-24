@@ -10,13 +10,11 @@ type Controller
   cell_movement::Function
   synapse_formation::Function
   synapse_weight::Function
-  synapse_output::Function
+  nt_output::Function
   nt_update::Function
 end
 
 type CellInputs
-  id::Float64
-  p_id::Float64
   ctype::Int64
   params::Vector{Int64}
   ntconc::Float64
@@ -28,16 +26,12 @@ applied at each time step for each cell
 return 1 bool
 """
 function division(morphogens::Vector{Float64}, cell::CellInputs)
-  if cell.id > 0.5
-    otherm = [4,2,3,3]
-    lower_scale = [1.6,0.8,0.8,0.8]
-    upper_scale = [1.8,1.0,1.1,1.1]
-    morph = morphogens[cell.params[otherm[cell.ctype]]]
-    mm = mean(morphogens)
-    return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
-  else
-    return false
-  end
+  otherm = [4,2,3,3]
+  lower_scale = [1.6,0.8,0.8,0.8]
+  upper_scale = [1.8,1.0,1.1,1.1]
+  morph = morphogens[cell.params[otherm[cell.ctype]]]
+  mm = mean(morphogens)
+  return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
 end
 
 """
@@ -122,16 +116,12 @@ applied for each cell every each time step
 return 1 bool
 """
 function apoptosis(morphogens::Vector{Float64}, cell::CellInputs)
-  if cell.id > 0.5
-    otherm = [1,3,1,1]
-    lower_scale = [0.05,1.4,0.1,0.5]
-    upper_scale = [0.06,5.0,0.3,0.7]
-    morph = morphogens[cell.params[otherm[cell.ctype]]]
-    mm = mean(morphogens)
-    return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
-  else
-    return false
-  end
+  otherm = [1,3,1,1]
+  lower_scale = [0.05,1.4,0.1,0.5]
+  upper_scale = [0.06,5.0,0.3,0.7]
+  morph = morphogens[cell.params[otherm[cell.ctype]]]
+  mm = mean(morphogens)
+  return (morph > lower_scale[cell.ctype] * mm) && (morph < upper_scale[cell.ctype] * mm)
 end
 
 """
@@ -139,8 +129,8 @@ morphogen diffusion
 applied for each cell at each grid point every time step
 return N_M floats
 """
-function morphogen_diff(dist::Float64, cell::CellInputs)
-  diffs = zeros(N_MORPHS)
+function morphogen_diff(morphogens::Vector{Float64}, dist::Float64, cell::CellInputs)
+  diffs = zeros(length(morphogens))
   for morphogen in eachindex(diffs)
     diff = 0.0
     factor = 0.0
@@ -191,12 +181,8 @@ return 1 bool
 function synapse_formation(dist::Float64, acell::CellInputs, bcell::CellInputs)
   form = false
   if acell.ctype == 4
-    if acell.p_id == bcell.id
+    if dist < 0.1 && bcell.ctype == 3
       form = true
-    else
-      if dist < 0.1 && bcell.ctype == 3
-        form = true
-      end
     end
   end
   form
@@ -207,13 +193,13 @@ update to synaptic weight
 applied to each possible synapse (soma,axon pair) at each timestep
 return 1 float
 """
-function synapse_weight(reward::Float64, a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs,
-                        bcell::CellInputs)
+function synapse_weight(a_morphs::Vector{Float64}, b_morphs::Vector{Float64},
+                        acell::CellInputs, bcell::CellInputs)
   weight = 0.0
   if acell.ctype == 3
     if bcell.ctype == 4
-      weight = (1.0 + reward) * ((a_morphs[acell.params[1]]+b_morphs[bcell.params[1]])
-                                 -(a_morphs[acell.params[2]]+b_morphs[bcell.params[2]]))
+      weight = 1.0 + ((a_morphs[acell.params[1]]+b_morphs[bcell.params[1]])
+                      -(a_morphs[acell.params[2]]+b_morphs[bcell.params[2]]))
     end
   end
   weight
@@ -224,10 +210,10 @@ determines synaptic output based on inputs
 applied to each receptor cell of a synapse at each timestep
 return 1 float
 """
-function synapse_output(synapse_input::Float64, synapse_weight::Float64, cell::CellInputs)
+function nt_output(synapse_input::Float64, cell::CellInputs)
   out = 0.0
   if (cell.ctype == 3 && cell.ntconc > 2.0) ||  cell.ctype == 4
-    out = synapse_input * synapse_weight
+    out = cell.nt_conc
   end
   out
 end
@@ -260,12 +246,12 @@ function random_controller()
   rchild_params = (morphogens::Vector{Float64}, ccell_type::Int64, pcell::CellInputs)->rand(1:N_MORPHS, N_PARAMS)
   rchild_position = (morphogens::Vector{Float64}, cell::CellInputs)->randn(N_D)
   rapoptosis = (morphogens::Vector{Float64}, cell::CellInputs)->rand(Bool)
-  rmorphogen_diff = (dist::Float64, cell::CellInputs)->randn(N_MORPHS)
+  rmorphogen_diff = (morphogens::Vector{Float64}, dist::Float64, cell::CellInputs)->randn(N_MORPHS)
   rcell_movement = (morphogens::Vector{Float64}, gradients::Array{Float64}, cell::CellInputs)->randn(N_D)
   rsynapse_formation = (dist::Float64, acell::CellInputs, bcell::CellInputs)->rand(Bool)
-  rsynapse_weight = (reward::Float64, a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs,
+  rsynapse_weight = (a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs,
                  bcell::CellInputs)->randn()
-  rsynapse_output = (synapse_input::Float64, synapse_weight::Float64, cell::CellInputs)->rand()
+  rnt_output = (synapse_input::Float64, cell::CellInputs)->rand()
   rnt_update = (synapse_input::Float64, synapse_output::Float64, cell::CellInputs)->randn()
 
   Controller(rdivision, rchild_type, rchild_params, rchild_position, rapoptosis, rmorphogen_diff, rcell_movement,

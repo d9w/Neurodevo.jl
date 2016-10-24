@@ -5,12 +5,12 @@ include("controller.jl")
 include("constants.jl")
 
 type Cell
-  p_id::Int64
   id::Int64
   pos::Vector{Float64}
   params::Vector{Int64}
   ctype::Int64
   ntconc::Float64
+  ntin::Float64
 end
 
 function Cell(id::Int64)
@@ -20,9 +20,10 @@ function Cell(id::Int64)
   Cell(0, id, pos, params, ctype, 0.0)
 end
 
+# TODO: use this model
 # type Synapse
-#   c1::Cell
-#   c2::Cell
+#   c1::Int64
+#   c2::Int64
 #   weight::Float64
 # end
 
@@ -70,9 +71,8 @@ function maxid(model::Model)
   maximum(keys(model.cells))
 end
 
-function cell_inputs(model::Model, cell::Cell)
-  mid = maxid(model)
-  CellInputs(cell.id/mid, cell.p_id/mid, cell.ctype, cell.params, cell.ntconc)
+function CellInputs(cell::Cell)
+  CellInputs(cell.ctype, cell.params, cell.ntconc)
 end
 
 function add_cell!(model::Model, cell::Cell)
@@ -91,6 +91,7 @@ function add_cell!(model::Model, cell::Cell)
 end
 
 function apoptosis!(model::Model, cell::Cell)
+  # TODO: generalize without cell types
   if cell.ctype == 3
     for a in model.soma_axons[cell.id]
       delete!(model.cells, a)
@@ -123,7 +124,7 @@ function update_morphogens!(model::Model, cont::Controller)
         for (ckey, cell) in model.cells
           dvec = [x y z] - cell.pos
           # TODO: reward
-          morphs = cont.morphogen_diff(model.morphogens[x,y,z,m], dvec, cell_inputs(model, cell), 0.0)
+          morphs = cont.morphogen_diff(model.morphogens[x,y,z,m], dvec, CellInputs(cell), 0.0)
           for m in 1:N_MORPHS
             model.morphogens[x,y,z,m] += morphs[m]
           end
@@ -147,17 +148,17 @@ function cell_division!(model::Model, cont::Controller)
   new_cells = Array{Cell}(0)
   for (ckey,cell) in model.cells
     morphogens = Array{Float64}([max(0.0,model.itp[[cell.pos[:];m]...]) for m in 1:N_MORPHS])
-    if cont.division(morphogens, cell_inputs(model, cell))
-      ctype = cont.child_type(morphogens, cell_inputs(model, cell))
+    if cont.division(morphogens, CellInputs(cell))
+      ctype = cont.child_type(morphogens, CellInputs(cell))
       id = maxid(model) + length(new_cells) + 1
-      params = cont.child_params(morphogens, ctype, cell_inputs(model, cell))
-      pos = cell.pos + cont.child_position(morphogens, cell_inputs(model, cell)).*DIMS
+      params = cont.child_params(morphogens, ctype, CellInputs(cell))
+      pos = cell.pos + cont.child_position(morphogens, CellInputs(cell)).*DIMS
       pos = min(max(pos, [1.,1.,1.]), DIMS)
       p_id = cell.id
       new_cell = Cell(p_id, id, pos, params, ctype, 0.0)
       append!(new_cells, [new_cell])
     end
-    if cont.apoptosis(morphogens, cell_inputs(model, cell))
+    if cont.apoptosis(morphogens, CellInputs(cell))
       append!(apop, [cell.id])
     end
   end
@@ -181,7 +182,7 @@ function synapse_update!(model::Model, cont::Controller)
       for (skey, scell) in somas
         if skey != acell.p_id
           dist = euclidean(acell.pos, scell.pos)/mean(DIMS)
-          if cont.synapse_formation(dist, cell_inputs(model, acell), cell_inputs(model, scell))
+          if cont.synapse_formation(dist, CellInputs(acell), CellInputs(scell))
             model.synapse[akey] = skey
             model.synapse_weights[akey] = 0.0
             break
@@ -195,8 +196,7 @@ function synapse_update!(model::Model, cont::Controller)
       smorphs = Array{Float64}([max(model.itp[[soma.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       amorphs = Array{Float64}([max(model.itp[[acell.pos[:];m]...],0.0) for m in 1:N_MORPHS])
       #TODO: include reinforcement signal as reward input
-      model.synapse_weights[akey] += cont.synapse_weight(0.0, smorphs, amorphs, cell_inputs(model, acell),
-                                                         cell_inputs(model, soma))
+      model.synapse_weights[akey] += cont.synapse_weight(0.0, smorphs, amorphs, CellInputs(acell), CellInputs(soma))
     end
   end
   nothing
@@ -211,7 +211,7 @@ function cell_movement!(model::Model, cont::Controller)
       morphs[m] = max(v,0.0)
       grad[m,:] = g[1:N_D]
     end
-    mov = cont.cell_movement(morphs, grad, cell_inputs(model, cell))
+    mov = cont.cell_movement(morphs, grad, CellInputs(cell))
     if any(x->x>0, mov)
       mov = mov .* DIMS
       new_pos = min(max(cell.pos+mov, [1.,1.,1.]), DIMS)
@@ -220,6 +220,25 @@ function cell_movement!(model::Model, cont::Controller)
     end
   end
   nothing
+end
+
+function fire!(model::Model, cont::Controller)
+  mks = keys(model.cells)
+  outputs = zeroes(length(mks))
+  for c in eachindex(mks)
+    cell = model.cells[mks[c]]
+    outputs[c] = cont.nt_output(cell.nt_in, CellInputs(cell))
+    cell.ntconc += cont.nt_update(cell.nt_in, outputs[c], CellInputs(cell))
+    cell.nt_in = 0.0
+  end
+
+  for c in eachindex(mks)
+    if outputs[c] != 0.0
+      for s in output_synapses
+        model.cells[s.c2].nt_in += outputs[c] * s.weight
+      end
+    end
+  end
 end
 
 function step!(model::Model, cont::Controller)
