@@ -12,12 +12,10 @@ function add_cells()
   @test haskey(m.cells, g.id)
   @test maxid(m)==g.id
   soma = Cell(maxid(m)+1)
-  soma.p_id = 1
   soma.ctype = 3
   add_cell!(m, soma)
   @test haskey(m.soma_axons, soma.id)
   axon = Cell(maxid(m)+1)
-  axon.p_id = soma.id
   axon.ctype = 4
   add_cell!(m, axon)
   @test axon.id in m.soma_axons[soma.id]
@@ -37,7 +35,6 @@ function apoptosis()
   @test ~(axon in m.soma_axons[soma])
   @test mapreduce(x->axon in x[2], +, m.soma_axons) == 0
   new_axon = Cell(maxid(m)+1)
-  new_axon.p_id = soma
   new_axon.ctype = 4
   add_cell!(m, new_axon)
   apoptosis!(m, m.cells[soma])
@@ -65,7 +62,6 @@ function cell_division()
   cells = deepcopy(collect(values(m.cells)))
   cell_division!(m, cont)
   @test cells != collect(values(m.cells))
-  newcells = filter((k,v)->v.p_id!=0,m.cells)
   @test length(newcells) > 0
 end
 
@@ -97,7 +93,6 @@ function synapse_update()
     add_cell!(m, soma)
     id+=1
     axon = Cell(id)
-    axon.p_id = soma.id
     axon.ctype = 4
     axons[i] = axon.id
     add_cell!(m, axon)
