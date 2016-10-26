@@ -1,16 +1,10 @@
 using LightGraphs
 using Grid
+using Distances
 
+include("types.jl")
 include("controller.jl")
 include("constants.jl")
-
-type Cell
-  pos::Vector{Float64}
-  params::Vector{Int64}
-  ctype::Int64
-  ntconc::Float64
-  ntin::Float64
-end
 
 function Cell()
   pos = 1.0.+rand(length(DIMS)).*(DIMS-1.0)
@@ -19,43 +13,10 @@ function Cell()
   Cell(pos, params, ctype, 0.0, 0.0)
 end
 
-type Synapse
-  c1::Cell # reference
-  c2::Cell
-  weight::Float64
-end
-
-type Model
-  morphogens::Array{Float64}
-  cells::Dict{Int64, Cell}
-  synapses::Array{Synapse}
-  itp::InterpGrid
-end
-
 function Model()
   i = 1
   morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
-  # TODO: this is still making 1 of each param type
-  param_permutes = Array{Int64}(N_MORPHS^N_PARAMS, N_PARAMS)
-  i = 1
-  for c = Counter([N_MORPHS for m=1:N_PARAMS])
-    param_permutes[i,:] = c
-    i += 1
-  end
-  n_cuts = ceil(Int64,N_MORPHS^(N_PARAMS/N_D))
-  cuts = [linspace(1,DIMS[d],n_cuts) for d=1:N_D]
-  i = 1
-  cells = Dict{Int64, Cell}()
-  for c = Counter([n_cuts for m=1:N_D])
-    if i <= size(param_permutes)[1]
-      pos = convert(Array{Float64},[cuts[d][c[d]] for d=1:N_D])
-      params = vec(param_permutes[i,:])
-      cells[i] = Cell(i, pos, params, 1, 0.0, 0.0)
-      i += 1
-    else
-      break
-    end
-  end
+  cells = Array{Cell}(0)
   synapses= Array{Synapse}(0)
   itp = InterpGrid(morphogens, BCnil, InterpQuadratic)
   Model(morphogens, cells, synapses, itp)
@@ -71,10 +32,20 @@ function CellInputs(cell::Cell)
 end
 
 function add_cell!(model::Model, cell::Cell)
-  if findfirst(model.cells, cell)
+  if findfirst(model.cells, cell) > 0
     error("cell already in model")
   end
-  append!(model.cells, [cell])
+  push!(model.cells, cell)
+end
+
+function add_synapse!(model::Model, c1::Cell, c2::Cell)
+  for c in [c1, c2]
+    if findfirst(model.cells, c) == 0
+      add_cell!(model, c)
+    end
+  end
+  s = Synapse(c1, c2, 0.0)
+  push!(model.synapses, s)
 end
 
 function apoptosis!(model::Model, cell::Cell)
@@ -88,9 +59,9 @@ function update_morphogens!(model::Model, cont::Controller)
     for y in 1:DIMS[2]
       for z in 1:DIMS[3]
         for cell in model.cells
-          dvec = [x y z] - cell.pos
+          dvec = [x, y, z] - cell.pos
           # TODO: reward
-          morphs = cont.morphogen_diff(model.morphogens[x,y,z,m], dvec, CellInputs(cell), 0.0)
+          morphs = cont.morphogen_diff([model.morphogens[x,y,z,m] for m in 1:N_MORPHS], dvec, CellInputs(cell))
           for m in 1:N_MORPHS
             model.morphogens[x,y,z,m] += morphs[m]
           end
@@ -145,7 +116,7 @@ function synapse_update!(model::Model, cont::Controller)
 
   for c1 in eachindex(model.cells)
     for c2 in eachindex(model.cells)
-      if c1 != c2 && ~former_synapse[c1, c2]
+      if c1 != c2 && ~bsynapses[c1, c2]
         c1cell = model.cells[c1]
         c2cell = model.cells[c2]
         dist = euclidean(c1cell.pos, c2cell.pos)/mean(DIMS)
@@ -165,7 +136,7 @@ function synapse_update!(model::Model, cont::Controller)
 end
 
 function cell_movement!(model::Model, cont::Controller)
-  for (ckey,cell) in model.cells
+  for cell in model.cells
     morphs = Vector{Float64}(N_MORPHS)
     grad = Array{Float64}(N_MORPHS, N_D)
     for m = 1:N_MORPHS
