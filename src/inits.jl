@@ -10,6 +10,26 @@ function random_model(N::Int64=100)
   m
 end
 
+function add_layer!(model::Model, lnum::Int64, maxl::Int64, nn::Int64)
+  n = floor(Int64, sqrt(nn))
+  z = lnum/maxl
+  for x in linspace(0.0, 1.0, n)
+    for y in linspace(0.0, 1.0, n)
+      add_cell!(model, Cell([x, y, z], [lnum], 1, 0.0, 0.0))
+      add_cell!(model, Cell([x, y, z], [lnum], 2, 0.0, 0.0))
+    end
+  end
+end
+
+function astrocyte()
+  m = Model()
+  add_layer!(m, 1, 4, 7*7)#28*28)
+  add_layer!(m, 2, 4, 5*5)#20*20)
+  add_layer!(m, 3, 4, 4*4)#10*10)
+  add_layer!(m, 4, 4, 9)
+  m
+end
+
 function permute_model()
   m = Model()
   param_permutes = Array{Int64}(N_MORPHS^N_PARAMS, N_PARAMS)
