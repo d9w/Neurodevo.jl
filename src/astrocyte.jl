@@ -24,10 +24,10 @@ end
 
 function astro_synapse_formation(locd)
   return function synapse_formation(dist::Float64, acell::CellInputs, bcell::CellInputs)
-    (acell.ctype == 1) && ((bcell.ctype == 1) && (acell.cparams[1] == bcell.cparams[1]+1)
+    (acell.ctype == 1) && ((bcell.ctype == 1) && (acell.params[1] == bcell.params[1]+1)
                           || (bcell.ctype == 2) && dist < locd)
     # TODO: also try the following:
-    # (acell.ctype == 1) && (acell.cparams[1] == bcell.cparams[1]+1)
+    # (acell.ctype == 1) && (acell.params[1] == bcell.params[1]+1)
   end
 end
 
@@ -94,7 +94,7 @@ function astrocyte_controller(cthresh::Float64=1.0, beta::Float64=5.0, hstat::Fl
   morphogen_diff = astro_morphogen_diff(cthresh, beta, hstat, locd)
   cell_movement = (morphogens::Vector{Float64}, gradients::Array{Float64}, cell::CellInputs)->zeros(N_D)
   synapse_formation = astro_synapse_formation(locd)
-  astro_synapse_weight = astro_synapse_weight(scalef)
+  synapse_weight = astro_synapse_weight(scalef)
   nt_output = astro_nt_output(vt)
   nt_update = astro_nt_update(vt, leak, rate)
 

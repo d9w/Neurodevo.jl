@@ -21,7 +21,7 @@ function add_layer!(model::Model, lnum::Int64, maxl::Int64, nn::Int64)
   end
 end
 
-function astrocyte()
+function astrocyte_model()
   m = Model()
   add_layer!(m, 1, 4, 7*7)#28*28)
   add_layer!(m, 2, 4, 5*5)#20*20)
