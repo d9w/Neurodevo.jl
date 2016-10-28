@@ -12,9 +12,9 @@ end
 
 function add_layer!(model::Model, lnum::Int64, maxl::Int64, nn::Int64)
   n = floor(Int64, sqrt(nn))
-  z = lnum/maxl
-  for x in linspace(0.0, 1.0, n)
-    for y in linspace(0.0, 1.0, n)
+  z = linspace(1.0, DIMS[3], maxl)[lnum]
+  for x in linspace(1.0, DIMS[1], n)
+    for y in linspace(1.0, DIMS[2], n)
       add_cell!(model, Cell([x, y, z], [lnum], 1, 0.0, 0.0))
       add_cell!(model, Cell([x, y, z], [lnum], 2, 0.0, 0.0))
     end
