@@ -1,4 +1,4 @@
-# model types
+using Grid
 
 type Cell
   pos::Vector{Float64}

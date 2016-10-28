@@ -1,4 +1,3 @@
-using LightGraphs
 using Grid
 using Distances
 

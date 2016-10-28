@@ -1,7 +1,8 @@
 using GLVisualize, GLWindow, GeometryTypes, FileIO
 using GLAbstraction, Colors, Reactive, ProgressMeter
 
-include("../src/model.jl")
+include("../src/astrocyte.jl")
+include("../src/inits.jl")
 
 window = glscreen()
 timesignal = loop(linspace(0f0, 1f0, 360))
@@ -14,8 +15,8 @@ mesh = GLNormalMesh(cube)
 # mesh = GLNormalMesh(loadasset("/home/d9w/Documents/projects/graphing/GLVisualize.jl/assets/cat.obj"))
 timepi = const_lift(*, timesignal, 2f0*pi)
 
-model = Model()
-cont = Controller()
+model = astrocyte_model()
+cont = astrocyte_controller()
 
 poses = rand(n, 3)
 mind = zeros(3)
@@ -35,7 +36,7 @@ position_signal = map(timepi) do t
   # step!(model, cont)
   model.morphogens += 0.1*rand(size(model.morphogens)...)
   # vec(Point3f0[Point3f0(model.cells[x].pos...) for x in keys(model.cells)])
-  vec(Point3f0[Point3f0(((model.cells[x].pos)./DIMS)...) for x in keys(model.cells)])
+  vec(Point3f0[Point3f0(((cell.pos)./DIMS)...) for cell in model.cells])
   # vec(Point3f0[position(t,x) for x=1:n])
 end
 
@@ -57,7 +58,7 @@ end
 
 color_signal = map(timepi) do t
   maxmorph = maximum(model.morphogens)
-  vec([RGBA{U8}(([model.itp[c.pos...,m] for m=1:3]./maxmorph)...,0.8) for c in values(model.cells)])
+  vec([RGBA{U8}(([model.itp[c.pos...,m] for m=1:3]./maxmorph)...,0.8) for c in model.cells])
 end
 
 t = const_lift(x->x+0.1, timesignal)
