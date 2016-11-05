@@ -1,6 +1,5 @@
 using Distances
 # Rules for a biology based controller
-include("types.jl")
 
 """
 """
@@ -182,4 +181,9 @@ function nt_update(synapse_input::Float64, synapse_output::Float64, cell::CellIn
     end
   end
   update
+end
+
+function Controller()
+  Controller(division, child_type, child_params, child_position, apoptosis, morphogen_diff, cell_movement,
+             synapse_formation, synapse_weight, nt_output, nt_update)
 end

@@ -1,9 +1,17 @@
+using Grid
 # Initializations for models
 
-include("model.jl")
+function empty_model()
+  i = 1
+  morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
+  cells = Array{Cell}(0)
+  synapses= Array{Synapse}(0)
+  itp = InterpGrid(morphogens, BCnil, InterpQuadratic)
+  Model(morphogens, cells, synapses, itp)
+end
 
 function random_model(N::Int64=100)
-  m = Model()
+  m = empty_model()
   for n=1:N
     add_cell!(m, Cell())
   end
@@ -22,7 +30,7 @@ function add_layer!(model::Model, lnum::Int64, maxl::Int64, nn::Int64)
 end
 
 function astrocyte_model()
-  m = Model()
+  m = empty_model()
   add_layer!(m, 1, 4, 7*7)#28*28)
   add_layer!(m, 2, 4, 5*5)#20*20)
   add_layer!(m, 3, 4, 4*4)#10*10)
@@ -31,7 +39,7 @@ function astrocyte_model()
 end
 
 function permute_model()
-  m = Model()
+  m = empty_model()
   param_permutes = Array{Int64}(N_MORPHS^N_PARAMS, N_PARAMS)
   i = 1
   for c = Counter([N_MORPHS for m=1:N_PARAMS])

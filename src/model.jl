@@ -1,24 +1,11 @@
 using Grid
 using Distances
 
-include("types.jl")
-include("controller.jl")
-include("constants.jl")
-
 function Cell()
   pos = 1.0.+rand(length(DIMS)).*(DIMS-1.0)
   params = rand(1:N_MORPHS, N_PARAMS)
   ctype = 1 # neural stem cell
   Cell(pos, params, ctype, 0.0, 0.0)
-end
-
-function Model()
-  i = 1
-  morphogens = zeros(Float64, [DIMS[:];N_MORPHS]...)
-  cells = Array{Cell}(0)
-  synapses= Array{Synapse}(0)
-  itp = InterpGrid(morphogens, BCnil, InterpQuadratic)
-  Model(morphogens, cells, synapses, itp)
 end
 
 function posm(cell_pos::Vector{Float64}, m::Int64)

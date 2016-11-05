@@ -11,7 +11,7 @@ global const v_thresh_e = -0.052
 global const v_thresh_i = -0.040
 global const refrac_e = 0.005
 global const refrac_i = 0.002
-global const input_example_time - 0.35
+global const input_example_time = 0.35
 global const input_rest_time = 0.15
 global const tc_pre_ee = 0.002
 global const tc_post_1_ee = 0.002

@@ -84,8 +84,8 @@ function astro_nt_update(vt::Float64=2.0, leak::Float64=0.01, rate::Float64=0.3)
   end
 end
 
-function astrocyte_controller(cthresh::Float64=1.0, beta::Float64=5.0, hstat::Float64=0.5, locd::Float64=0.01,
-                              scalef::Float64=0.1, vt::Float64=2.0, leak::Float64=0.01, rate::Float64=0.3)
+function Controller(cthresh::Float64=1.0, beta::Float64=5.0, hstat::Float64=0.5, locd::Float64=0.01,
+                    scalef::Float64=0.1, vt::Float64=2.0, leak::Float64=0.01, rate::Float64=0.3)
   division = (morphogens::Vector{Float64}, cell::CellInputs)->false
   child_type = (morphogens::Vector{Float64}, cell::CellInputs)->1
   child_params = (morphogens::Vector{Float64}, ccell_type::Int64, pcell::CellInputs)->ones(N_PARAMS)
