@@ -6,6 +6,11 @@ using NGE
   m = Model()
   c = Controller()
 
+  @testset "Step" begin
+    step!(m, c)
+    @test 0 == 0 # just test for errors
+  end
+
   @testset "Add cells" begin
     ncells = length(m.cells)
     g = Cell()
@@ -15,43 +20,44 @@ using NGE
   end
 
   @testset "Apoptosis" begin
-    c = m.cells[1]
-    apoptosis!(m, c)
-    @test length(findin(m.cells, [c])) == 0
-    @test length(m.cells) == 0
+    ncells = length(m.cells)
+    c1 = m.cells[1]
+    apoptosis!(m, c1)
+    @test length(findin(m.cells, [c1])) == 0
+    @test length(m.cells) == ncells - 1
     c1 = Cell()
     c2 = Cell()
     add_cell!(m, c1)
     add_cell!(m, c2)
-    @test length(m.synapses) == 0
+    nsyns = length(m.synapses)
     add_synapse!(m, c1, c2)
-    @test length(m.synapses) == 1
-    @test m.synapses[1].c1 == c1
-    @test m.synapses[1].c2 == c2
+    @test length(m.synapses) == nsyns + 1
+    @test length(find(x->x.c1 == c1 && x.c2 == c2, m.synapses)) == 1
     apoptosis!(m, c1)
     @test length(findin(m.cells, [c1])) == 0
-    @test length(m.synapses) == 0
+    @test length(m.synapses) == nsyns
   end
 
   @testset "Update morphogens" begin
-    cont = Controller()
-    update_morphogens!(m, cont)
+    c.morphogen_diff = (morphogens::Vector{Float64}, dist::Vector{Float64}, cell::CellInputs) -> randn(N_MORPHS)
+    update_morphogens!(m, c)
     @test any(m.morphogens .> 0)
     @test ~any(m.morphogens .< 0)
   end
 
   @testset "Cell division" begin
-    cont.division = (morphogens::Vector{Float64}, cell::CellInputs) -> true
+    c.division = (morphogens::Vector{Float64}, cell::CellInputs) -> true
+    add_cell!(m, Cell())
     cells = deepcopy(m.cells)
-    cell_division!(m, cont)
+    cell_division!(m, c)
     @test cells != m.cells
     @test length(m.cells) > length(cells)
   end
 
   @testset "Cell movement" begin
+    c.cell_movement = (morphogens::Vector{Float64}, gradients::Array{Float64}, cell::CellInputs) -> rand(N_D)
     pos = map(x->x.pos, m.cells)
-    update_morphogens!(m, cont)
-    cell_movement!(m, cont)
+    cell_movement!(m, c)
     newpos = map(x->x.pos, m.cells)
     @test newpos != pos
     @test all(x->all(x.>=1.), newpos)
@@ -59,30 +65,35 @@ using NGE
   end
 
   @testset "Synapse formation" begin
+    nsyns = length(m.synapses)
     c1 = Cell()
     c2 = Cell()
     add_cell!(m, c1)
     add_cell!(m, c2)
 
-    # force synapse formation and survival
-    cont = Controller()
-    cont.synapse_formation = (dist::Float64, acell::CellInputs, bcell::CellInputs) -> true
+    c.synapse_formation = (dist::Float64, acell::CellInputs, bcell::CellInputs) -> true
+    c.synapse_weight =
+      (a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs, bcell::CellInputs) -> 0.0
 
     # form synapses
-    synapse_update!(m, cont)
+    synapse_update!(m, c)
 
     # neural cells should be connected with new neural weights
-    @test length(m.synapses) == 2
-    @test m.synapses[1].c1 == c1 || m.synapses[1].c2 == c1
-    @test m.synapses[1].c1 == c2 || m.synapses[1].c2 == c2
-    @test m.synapses[2].c1 == c1 || m.synapses[2].c2 == c1
-    @test m.synapses[2].c1 == c2 || m.synapses[2].c2 == c2
+    @test length(m.synapses) > nsyns
+    @test length(find(x->x.c1 == c1 && x.c2 == c2, m.synapses)) == 1
+    @test length(find(x->x.c1 == c2 && x.c2 == c1, m.synapses)) == 1
+    @test all(x->m.synapses[x].weight == 0.0,
+              find(x->x.c1 == c1 || x.c1 == c2 || x.c2 == c1 || x.c2 == c2, m.synapses))
 
-    weights = deepcopy(map(s->s.weight, m.synapses))
+    c.synapse_weight =
+      (a_morphs::Vector{Float64}, b_morphs::Vector{Float64}, acell::CellInputs, bcell::CellInputs) -> randn()
 
     # cache the current weights and update
-    synapse_update!(m, cont)
-    @test length(m.synapses) == 2
+    weights = deepcopy(map(s->s.weight, m.synapses))
+    nsyns = length(m.synapses)
+    synapse_update!(m, c)
+
+    @test length(m.synapses) == nsyns
     @test weights != map(s->s.weight, m.synapses)
   end
 

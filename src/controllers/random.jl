@@ -1,7 +1,5 @@
 # default (random) controller and docstrings
 
-include("types.jl")
-
 """
 determines if a cell should divide
 applied at each time step for each cell

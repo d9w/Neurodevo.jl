@@ -4,9 +4,10 @@ include("types.jl")
 include("constants.jl")
 include("model.jl")
 include("inits.jl")
-# include("biocont.jl")
-include("astrocyte.jl")
-Model() = astrocyte_model()
+# include("controllers/biocont.jl")
+include("controllers/astrocyte.jl")
+# include("controllers/random.jl")
+Model() = random_model()
 
 export Cell, Synapse, Model, Controller, CellInputs, MORPHOGEN_REMAINDER,
   STEP_INIT, STEP_TOTAL, CHANGE_STOP, AXON_MAX, MIN_DIST, N_MORPHS, N_PARAMS,
