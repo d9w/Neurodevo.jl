@@ -97,6 +97,47 @@ using NGE
     @test weights != map(s->s.weight, m.synapses)
   end
 
+  @testset "Firing" begin
+    # ensure enough cells
+    while length(m.cells) < 10
+      add_cell!(m, Cell())
+    end
+
+    # ensure synaptic connections with nonzero weights
+    c.synapse_formation = (dist::Float64, acell::CellInputs, bcell::CellInputs) -> true
+    synapse_update!(m, c)
+    for s in filter(x->x.weight == 0.0, m.synapses)
+      s.weight = randn()
+    end
+
+    ntconcs = deepcopy(map(x->x.ntconc, m.cells))
+
+    c.nt_output = (input::Float64, cell::CellInputs) -> randn()
+    c.nt_update = (input::Float64, output::Float64, cell::CellInputs) -> input
+
+    fire!(m, c) # fire into next timestep inputs
+    fire!(m, c) # nt update each cell
+
+    @test ntconcs != map(x->x.ntconc, m.cells)
+    @test any(x->x.ntin != 0.0, m.cells)
+
+    # set to null output and compare concentration
+    ntins = deepcopy(map(x->x.ntin, m.cells))
+    ntconcs = deepcopy(map(x->x.ntconc, m.cells))
+    c.nt_output = (input::Float64, cell::CellInputs) -> 0.0
+
+    fire!(m, c)
+
+    @test ntins + ntconcs == map(x->x.ntconc, m.cells)
+    @test all(x->x.ntin == 0.0, m.cells)
+
+    # multiple firing doesn't change, as nt_out is 0.0
+    fire!(m, c)
+
+    @test ntins + ntconcs == map(x->x.ntconc, m.cells)
+    @test all(x->x.ntin == 0.0, m.cells)
+  end
+
 end
 
 # function profile_model()

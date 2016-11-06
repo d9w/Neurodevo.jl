@@ -142,21 +142,23 @@ function cell_movement!(model::Model, cont::Controller)
 end
 
 function fire!(model::Model, cont::Controller)
-  outputs = zeroes(length(model.cells))
+  outputs = zeros(length(model.cells))
   for c in eachindex(model.cells)
     cell = model.cells[c]
-    outputs[c] = cont.nt_output(cell.nt_in, CellInputs(cell))
-    cell.ntconc += cont.nt_update(cell.nt_in, outputs[c], CellInputs(cell))
-    cell.nt_in = 0.0
+    outputs[c] = cont.nt_output(cell.ntin, CellInputs(cell))
+    cell.ntconc += cont.nt_update(cell.ntin, outputs[c], CellInputs(cell))
+    cell.ntin = 0.0
   end
 
   for c in eachindex(model.cells)
+    cell = model.cells[c]
     if outputs[c] != 0.0
-      for s in filter(s->s.c1==c, model.synapses)
-        model.cells[s.c2].nt_in += outputs[c] * s.weight
+      for s in filter(s->s.c1==cell, model.synapses)
+        s.c2.ntin += outputs[c] * s.weight
       end
     end
   end
+  nothing
 end
 
 function step!(model::Model, cont::Controller)
