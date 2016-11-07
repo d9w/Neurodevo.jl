@@ -34,7 +34,11 @@ function astrocyte_model()
   add_layer!(m, 1, 4, 7*7)#28*28)
   add_layer!(m, 2, 4, 5*5)#20*20)
   add_layer!(m, 3, 4, 4*4)#10*10)
-  add_layer!(m, 4, 4, 9)
+  # add_layer!(m, 4, 4, 3*3) # TODO: compare with SNN and DNN on only 9 ints
+  for x in linspace(1.0, DIMS[1], 10) # TODO: try a circle
+    add_cell!(m, Cell([x, x, DIMS[3]], [4], 1, 0.0, 0.0))
+    add_cell!(m, Cell([x, x, DIMS[3]], [4], 2, 0.0, 0.0))
+  end
   m
 end
 
