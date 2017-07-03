@@ -1,2 +1,2 @@
-# nge
-Neuron Growth Environment
+# 4EL
+Evolving Evolutionary Exploration Environment for Learning
