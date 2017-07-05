@@ -1,17 +1,17 @@
-export Cell, Synapse, Controller, Eval, Individual, Environment
+export Controller, Eval, Individual, Environment
 
-type Cell
-    state::Vector{Float64}
-    params::Vector{Float64}
-    ID::Int64
-end
+# type Cell
+#     ID::Int64
+#     params::Vector{Float64}
+#     state::Vector{Float64}
+# end
 
-type Synpase
-    state::Vector{Float64}
-    params::Vector{Float64}
-    C1::Int64
-    C2::Int64
-end
+# type Synpase
+#     params::Vector{Float64}
+#     state::Vector{Float64}
+#     pre::Int64
+#     post::Int64
+# end
 
 type Controller
     cell_division::Function
@@ -20,27 +20,24 @@ type Controller
     synpase_formation::Function
     synapse_parameters::Function
     synapse_state::Function
-    self_update::Function
     cell_update::Function
     cell_death::Function
     synapse_update::Function
     synapse_death::Function
-    global_input::Function
-    global_output::Function
-    global_reward::Function
-end
-
-type Eval
-    age::Int64
-    fitness::Float64
-    task_id::Int64
+    input::Function
+    output::Function
+    reward::Function
 end
 
 type Individual
-    cells::Array{Cell}
-    synapses::Array{Synapse}
+    cell_params::Array{Float64}
+    cell_states::Array{Float64}
+    synapse_params::Array{Float64}
+    synapse_state::Array{Float64}
+    synapse_index::Array{Float64}
+    fitness_history::Array{Int64}
+    fitness_values::Vector{Float64}
     controller::Controller
-    fitness::Array{Eval}
 end
 
 type Environment
@@ -53,4 +50,6 @@ type Environment
     reward::Array{Function}
     mutation::Float64
     crossover::Float64
+    param_length::Int64
+    state_length::Int64
 end
