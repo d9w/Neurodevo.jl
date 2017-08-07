@@ -3,17 +3,9 @@ using E4L
 
 @testset "Individual tests" begin
 
-    N = 5
-    i = Individual(N, N)
-    i.controller.cell_division = (x...)->false
-    i.controller.synapse_formation = (x...)->false
-    i.controller.cell_update = (x...)->zeros(N)
-    i.controller.cell_death = (x...)->false
-    i.controller.synapse_update = (x...)->zeros(N)
-    i.controller.synapse_death = (x...)->false
-    i.controller.input = (x...)->zeros(3)
-    i.controller.output = (x...)->zeros(3)
-    i.controller.reward = (x...)->zeros(3)
+    N = rand(1:10)
+    i = Individual(N, N, N, N)
+
     new_params = 0.001*randn(N)
     new_state = 0.001*randn(N)
 
@@ -63,14 +55,16 @@ using E4L
         i.controller.cell_update = (x...)->zeros(N)
         prev_state = deepcopy(i.cell_state)
         step!(i)
-        @test i.cell_state == prev_state + repmat(new_state, 1, size(i.cell_state, 2))
+        @test i.cell_state == prev_state + repmat(
+            new_state, 1, size(i.cell_state, 2))
     end
 
     @testset "Synapse update" begin
         i.controller.synapse_update = (x...)->new_state
         prev_state = deepcopy(i.synapse_state)
         step!(i)
-        @test i.synapse_state == prev_state + repmat(new_state, 1, size(i.cell_state, 2))
+        @test i.synapse_state == prev_state + repmat(
+            new_state, 1, size(i.cell_state, 2))
     end
 
     @testset "Input" begin

@@ -1,18 +1,3 @@
-export Controller, Individual, Environment
-
-# type Cell
-#     ID::Int64
-#     params::Vector{Float64}
-#     state::Vector{Float64}
-# end
-
-# type Synpase
-#     params::Vector{Float64}
-#     state::Vector{Float64}
-#     pre::Int64
-#     post::Int64
-# end
-
 mutable struct Controller
     cell_division::Function
     child_parameters::Function
@@ -30,26 +15,13 @@ mutable struct Controller
 end
 
 mutable struct Individual
-    params::Array{Float64}
     cell_params::Array{Float64}
     cell_states::Array{Float64}
     synapse_params::Array{Float64}
     synapse_state::Array{Float64}
     synapse_index::Array{Float64}
     fitness_history::Array{Int64}
+    fitness_values::Vector{Float64}
     controller::Controller
 end
 
-mutable struct Environment
-    individuals::Array{Individual}
-    next_task::Function
-    mate::Function
-    compete::Function
-    dominates::Function
-    new_state::Array{Function}
-    reward::Array{Function}
-    mutation::Float64
-    crossover::Float64
-    param_length::Int64
-    state_length::Int64
-end
