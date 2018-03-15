@@ -37,16 +37,16 @@ function process(inputs::Array{Float64})
 end
 
 function timestep(chromo::Chromosome, input_spikes::BitArray, network::Network,
-                  train::Bool=true, label::Int64=0)
+                  train::Bool=false, label::Int64=0)
     inps = input_spikes' * network.weights
     fs = (network.neurons[:, 1] * (vmax - vmin) + vmin) .>= vthresh
     inps -= fs' * inhib_weights
     inps = (inps'[:] .- vmin) ./ (vmax - vmin)
+    class_labels = zeros(nout)
     for n in 1:N
         state = network.neurons[n, :]
         inputs = max.(-1.0, min.(1.0, [state; inps[n]; Float64(fs[n])]))
-        println(inputs)
-        pout = process(chromo, inputs)
+        pout = CGP.process(chromo, inputs)
         network.neurons[n, :] = pout
     end
     # stdp
@@ -60,13 +60,12 @@ function timestep(chromo::Chromosome, input_spikes::BitArray, network::Network,
             (wmax .- network.weights[:, fs]).^stdp_mu)
         network.weights[network.weights .< 0] .= 0.0
     else
-        class_labels = zeros(nout)
         fired = network.classes[fs, :]
-        for i in size(fired, 1)
+        for i in 1:size(fired, 1)
             class_labels[indmax(fired[i, :])] += 1.0
         end
-        return class_labels
     end
+    class_labels
 end
 
 function stdp_mnist(chromo::Chromosome)
@@ -80,9 +79,10 @@ function stdp_mnist(chromo::Chromosome)
     acc_count = 0
 
     # training
-    for img in 1:100
+    for img in 1:10
         fr = MNIST.trainfeatures(img) / 4.0
         label = Int64(1.0+MNIST.trainlabel(img))
+        println(label)
         for t in 1:350
             input_spikes = rand(length(fr)) .< (dt * fr)
             timestep(chromo, input_spikes, network, true, label)
@@ -106,6 +106,7 @@ function stdp_mnist(chromo::Chromosome)
             class_labels += timestep(chromo, input_spikes, network)
         end
         println(label, " ", class_labels)
+        # TODO: use a cluster accuracy metric
         if indmax(class_labels) == label
             acc_count += 1
         end
@@ -113,36 +114,3 @@ function stdp_mnist(chromo::Chromosome)
 
     acc_count/100
 end
-
-function get_args()
-    s = ArgParseSettings()
-
-    @add_arg_table s begin
-        "--seed"
-        arg_type = Int
-        default = 0
-        "--log"
-        arg_type = String
-        required = true
-        "--ea"
-        arg_type = String
-        required = true
-        "--chromosome"
-        arg_type = String
-        required = true
-    end
-
-    CGP.Config.add_arg_settings!(s)
-end
-
-CGP.Config.init("cfg/base.yaml")
-CGP.Config.init("cfg/classic.yaml")
-
-args = parse_args(get_args())
-srand(args["seed"])
-Logging.configure(filename=args["log"], level=INFO)
-ea = eval(parse(args["ea"]))
-ctype = eval(parse(args["chromosome"]))
-
-maxfit, best = ea(ctype, 2, 2, stdp_mnist)
-Logging.info(@sprintf("E%0.6f", -maxfit))
