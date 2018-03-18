@@ -27,13 +27,13 @@ struct Network
 end
 
 function process(inputs::Array{Float64})
-    # if inputs[4] == 1.0
-    #     out = (vstart - vmin) / (vmax - vmin)
-    # else
-    #     out = 0.95 * inputs[1] + inputs[3]
-    # end
-    # [out, 0.0]
-    rand(2)
+    if inputs[4] == 1.0
+        out = (vstart - vmin) / (vmax - vmin)
+    else
+        out = 0.95 * inputs[1] + inputs[3]
+    end
+    [out, 0.0]
+    # rand(2)
 end
 
 function timestep(chromo::Chromosome, input_spikes::BitArray, network::Network,
@@ -41,12 +41,14 @@ function timestep(chromo::Chromosome, input_spikes::BitArray, network::Network,
     inps = input_spikes' * network.weights
     fs = (network.neurons[:, 1] * (vmax - vmin) + vmin) .>= vthresh
     inps -= fs' * inhib_weights
+    # TODO: check normalization
     inps = (inps'[:] .- vmin) ./ (vmax - vmin)
     class_labels = zeros(nout)
     for n in 1:N
         state = network.neurons[n, :]
         inputs = max.(-1.0, min.(1.0, [state; inps[n]; Float64(fs[n])]))
-        pout = CGP.process(chromo, inputs)
+        # pout = CGP.process(chromo, inputs)
+        pout = process(inputs)
         network.neurons[n, :] = pout
     end
     # stdp
