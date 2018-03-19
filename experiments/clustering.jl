@@ -59,8 +59,8 @@ size(X,2)
 function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
                       seed=0, logfile="stdp.log", train_epochs=1,
                       n_hidden=size(X, 1), dt=0.001, t_train=350, t_blank=150,
-                      fr=65, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
-                      vstart=-65.0, vthresh=30.0, vmin=-80.0, vmax=40.0,
+                      fr=65.0, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
+                      vstart=-65.0, vthresh=30.0, vmin=-100.0, vmax=100.0,
                       wmax=1.0, stdp_lr=0.0001, stdp_mu=2.0,
                       inhib_weight=0.1)::Array{Int64}
 
@@ -79,7 +79,6 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
 
     # training
     for epoch in 1:train_epochs
-        println("epoch $epoch")
         labels = iterate!(network, X, cfg, true)
         acc = randindex(Y, labels)
         Logging.info(@sprintf("R: %d %d %0.4f %0.4f %0.4f %0.4f",

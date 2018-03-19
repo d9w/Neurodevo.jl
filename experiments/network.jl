@@ -81,6 +81,5 @@ function iterate!(network::Network, X::Array{Float64}, cfg::STDPConfig,
             step!(network, input_spikes, train)
         end
     end
-    println("Labels: $labels")
     labels
 end
