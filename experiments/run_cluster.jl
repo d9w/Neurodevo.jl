@@ -7,6 +7,9 @@ settings = ArgParseSettings()
     "--problem"
     arg_type = String
     default = "iris"
+    "--fname"
+    arg_type = String
+    default = "lif"
     "--seed"
     arg_type = Int
     default = 0
@@ -54,6 +57,7 @@ n_cluster = length(unique(Y))
 
 stdp_labels = stdp_cluster(
     X, Y, n_cluster; seed=args["seed"], logfile=args["logfile"],
+    problem=args["problem"], fname=args["fname"],
     train_epochs=args["train_epochs"], weight_mean=args["weight_mean"],
     weight_std=args["weight_std"], t_train=args["t_train"],
     t_blank=args["t_blank"], fr=args["fr"], pre_target=args["pre_target"],
