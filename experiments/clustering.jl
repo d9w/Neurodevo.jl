@@ -4,6 +4,8 @@ using Logging
 struct STDPConfig
     n_hidden::Int64
     dt::Float64
+    weight_mean::Float64
+    weight_std::Float64
     t_train::Int64
     t_blank::Int64
     fr::Float64
@@ -50,7 +52,6 @@ function lif(nstate::Array{Float64}, vstart::Float64, vthresh::Float64)
     outputs
 end
 
-
 """
 STDP as a clustering function. X is unlabeled data and n is the number of
 clusters. X must be between 0 and 1. Returns an Array{Int64} of labels with
@@ -58,10 +59,11 @@ size(X,2)
 """
 function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
                       seed=0, logfile="stdp.log", train_epochs=1,
-                      n_hidden=size(X, 1), dt=0.001, t_train=350, t_blank=150,
-                      fr=65.0, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
-                      vstart=-65.0, vthresh=30.0, vmin=-100.0, vmax=100.0,
-                      wmax=1.0, stdp_lr=0.0001, stdp_mu=2.0,
+                      n_hidden=size(X, 1), dt=0.001, weight_mean=0.5,
+                      weight_std=0.1, t_train=350, t_blank=150, fr=65.0,
+                      pre_dt=20.0, pre_inc=1.0, pre_target=0.4, vstart=-65.0,
+                      vthresh=30.0, vmin=-100.0, vmax=100.0, wmax=1.0,
+                      stdp_lr=0.0001, stdp_mu=2.0,
                       inhib_weight=0.1)::Array{Int64}
 
     vstart = (vstart - vmin) / (vmax - vmin)
@@ -69,9 +71,9 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
 
     nfunc = i->lif(i, vstart, vthresh)
 
-    cfg = STDPConfig(n_hidden, dt, t_train, t_blank, fr, pre_dt, pre_inc,
-                     pre_target, vstart, vthresh, vmin, vmax, wmax, stdp_lr,
-                     stdp_mu, inhib_weight, nfunc)
+    cfg = STDPConfig(n_hidden, dt, weight_mean, weight_std, t_train, t_blank,
+                     fr, pre_dt, pre_inc, pre_target, vstart, vthresh, vmin,
+                     vmax, wmax, stdp_lr, stdp_mu, inhib_weight, nfunc)
 
     srand(seed)
     n_input = size(X, 1)

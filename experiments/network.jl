@@ -7,7 +7,7 @@ end
 
 function Layer(nin::Int64, nout::Int64, cfg::STDPConfig)
     neurons = zeros(4, nout)
-    weights = rand(nin, nout)
+    weights = max.(0.0, cfg.weight_std.*randn(nin, nout) .+ cfg.weight_mean)
     inhib = cfg.inhib_weight * (1.0 - eye(nout, nout))
     trace = zeros(nin, nout)
     Layer(neurons, weights, inhib, trace)

@@ -1,23 +1,12 @@
-using RDatasets
 using ArgParse
 include("clustering.jl")
-
-iris = dataset("datasets", "iris")
-
-iris_data = Array{Float64}([iris[:SepalLength] iris[:SepalWidth] iris[:PetalWidth] iris[:PetalLength]]);
-xmin = minimum(iris_data, 1)
-xmax = maximum(iris_data, 1)
-X = Array{Float64}(size(iris_data, 2), size(iris_data, 1))
-for i in 1:size(iris_data, 2)
-    X[i, :] = (iris_data[:, i] .- xmin[i]) ./ (xmax[i] - xmin[i])
-end
-
-sps = unique(iris[:Species])
-iris[:label] = indexin(iris[:Species], sps)
-Y = Array{Int64}(iris[:label])
+include("datasets.jl")
 
 settings = ArgParseSettings()
 @add_arg_table settings begin
+    "--problem"
+    arg_type = String
+    default = "iris"
     "--seed"
     arg_type = Int
     default = 0
@@ -27,9 +16,12 @@ settings = ArgParseSettings()
     "--train_epochs"
     arg_type = Int
     default = 1
-    "--n_hidden"
-    arg_type = Int
-    default = 40
+    "--weight_mean"
+    arg_type = Float64
+    default = 0.5
+    "--weight_std"
+    arg_type = Float64
+    default = 0.1
     "--t_train"
     arg_type = Int
     default = 350
@@ -57,12 +49,16 @@ settings
 args = parse_args(settings)
 Logging.configure(filename=args["logfile"], level=INFO)
 
+X, Y = get_data(args["problem"])
+n_cluster = length(unique(Y))
+
 stdp_labels = stdp_cluster(
-    X, Y, 3; seed=args["seed"], logfile=args["logfile"],
-    train_epochs=args["train_epochs"], n_hidden=args["n_hidden"],
-    t_train=args["t_train"], t_blank=args["t_blank"], fr=args["fr"],
-    pre_target=args["pre_target"], stdp_lr=args["stdp_lr"],
-    stdp_mu=args["stdp_mu"], inhib_weight=args["inhib_weight"])
+    X, Y, n_cluster; seed=args["seed"], logfile=args["logfile"],
+    train_epochs=args["train_epochs"], weight_mean=args["weight_mean"],
+    weight_std=args["weight_std"], t_train=args["t_train"],
+    t_blank=args["t_blank"], fr=args["fr"], pre_target=args["pre_target"],
+    stdp_lr=args["stdp_lr"], stdp_mu=args["stdp_mu"],
+    inhib_weight=args["inhib_weight"])
 
 acc = randindex(stdp_labels, Y)
 

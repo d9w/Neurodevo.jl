@@ -1,6 +1,7 @@
 # name		    switch                    type	    values			[conditions (using R syntax)]
 epochs        "--train_epochs "         i         (1, 10)
-n_hidden      "--n_hidden "             c         (2, 4, 6, 8, 10, 12, 14, 20, 30)
+weight_mean   "--weight_mean "          r         (0.1, 1.0)
+weight_std    "--weight_std "           r         (0.1, 0.5)
 t_train       "--t_train "              c         (150, 200, 250, 300, 350, 400)
 t_blank       "--t_blank "              c         (0, 50, 100, 150)
 fr            "--fr "                   c         (50.0, 55.0, 60.0, 65.0, 70.0)
