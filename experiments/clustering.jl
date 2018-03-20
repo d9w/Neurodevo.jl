@@ -89,7 +89,7 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
     final_labels = iterate!(network, X, cfg, false)
     acc = randindex(Y, final_labels)
     Logging.info(@sprintf("T: %d %d %0.4f %0.4f %0.4f %0.4f",
-                          0, seed, acc[1], acc[2], acc[3], acc[4]))
+                          train_epochs+1, seed, acc[1], acc[2], acc[3], acc[4]))
 
     final_labels
 end
