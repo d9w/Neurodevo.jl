@@ -7,7 +7,7 @@ end
 
 function Layer(nin::Int64, nout::Int64, cfg::STDPConfig)
     neurons = zeros(4, nout)
-    weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(nin, nout)
+    weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(rng, nin, nout)
                              .+ cfg.weight_mean))
     inhib = cfg.inhib_weight * (1.0 - eye(nout, nout))
     trace = zeros(nin, nout)
@@ -23,7 +23,7 @@ struct Network
 end
 
 function Network(n_input::Int64, n_hidden::Int64, n_output::Int64,
-                 cfg::STDPConfig)
+                 cfg::STDPConfig; rng::MersenneTwister=MersenneTwister(0))
     hidden = Layer(n_input, n_hidden, cfg)
     output = Layer(n_hidden, n_output, cfg)
     Network(n_input, n_hidden, n_output, cfg, [hidden, output])
@@ -68,12 +68,12 @@ function step!(network::Network, input_spikes::BitArray, train::Bool)
 end
 
 function iterate!(network::Network, X::Array{Float64}, cfg::STDPConfig,
-                  train::Bool)
+                  train::Bool; rng::MersenneTwister=MersenneTwister(0))
     labels = zeros(Int64, size(X, 2))
     for x in eachindex(labels)
         xfr = X[:, x] * cfg.fr
         out_spikes = zeros(network.n_output)
-        input_spikes = rand(network.n_input, cfg.t_train) .< (cfg.dt * xfr)
+        input_spikes = rand(rng, network.n_input, cfg.t_train) .< (cfg.dt * xfr)
         for t in 1:cfg.t_train
             out_spikes += step!(network, input_spikes[:, t], train)
         end

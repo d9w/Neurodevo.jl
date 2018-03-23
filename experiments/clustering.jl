@@ -30,18 +30,17 @@ STDP as a clustering function. X is unlabeled data and n is the number of
 clusters. X must be between 0 and 1. Returns an Array{Int64} of labels with
 size(X,2)
 """
-function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
+function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfunc::Function;
                       seed=0, logfile="stdp.log", problem="iris", fname="lif",
                       train_epochs=1, n_hidden=size(X, 1), dt=0.001,
                       weight_mean=0.5, weight_std=0.1, t_train=350, t_blank=150,
                       fr=65.0, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
-                      vstart=-65.0, vthresh=30.0, vscale=100.0,
-                      wmax=1.0, stdp_lr=0.0001, stdp_mu=2.0,
+                      vstart=-65.0, vthresh=30.0, vscale=100.0, wmax=1.0,
+                      stdp_lr=0.0001, stdp_mu=2.0,
                       inhib_weight=0.1)::Array{Int64}
 
     vstart = vstart / vscale; vthresh = vthresh / vscale
 
-    nfunc = Function
     if fname == "lif"
         nfunc = i->lif(i, vstart, vthresh)
     elseif fname == "izhikevich"
@@ -54,13 +53,13 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
                      fr, pre_dt, pre_inc, pre_target, vstart, vthresh, vscale,
                      wmax, stdp_lr, stdp_mu, inhib_weight, nfunc)
 
-    srand(seed)
+    rng = MersenneTwister(seed)
     n_input = size(X, 1)
-    network = Network(n_input, n_hidden, n_cluster, cfg)
+    network = Network(n_input, n_hidden, n_cluster, cfg; rng=rng)
 
     # training
     for epoch in 1:train_epochs
-        labels = iterate!(network, X, cfg, true)
+        labels = iterate!(network, X, cfg, true, rng=rng)
         acc = randindex(Y, labels)
         Logging.info(@sprintf("R: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
                               epoch, seed, problem, fname, acc[1], acc[2],
@@ -68,7 +67,7 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64;
     end
 
     # testing
-    final_labels = iterate!(network, X, cfg, false)
+    final_labels = iterate!(network, X, cfg, false, rng=rng)
     acc = randindex(Y, final_labels)
     Logging.info(@sprintf("T: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
                           train_epochs, seed, problem, fname, acc[1], acc[2],
