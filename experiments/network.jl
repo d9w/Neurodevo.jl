@@ -7,7 +7,8 @@ end
 
 function Layer(nin::Int64, nout::Int64, cfg::STDPConfig)
     neurons = zeros(4, nout)
-    weights = max.(0.0, cfg.weight_std.*randn(nin, nout) .+ cfg.weight_mean)
+    weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(nin, nout)
+                             .+ cfg.weight_mean))
     inhib = cfg.inhib_weight * (1.0 - eye(nout, nout))
     trace = zeros(nin, nout)
     Layer(neurons, weights, inhib, trace)
@@ -37,6 +38,8 @@ function spike!(network::Network, layer::Layer, input::BitArray)
         nstate = [layer.neurons[:, n]; inputs[n]; float_spikes[n]]
         layer.neurons[:, n] = network.cfg.neuron_function(nstate)
     end
+    layer.neurons[layer.neurons .< -1.0] .= -1.0
+    layer.neurons[layer.neurons .> -1.0] .= 1.0
     spikes
 end
 
