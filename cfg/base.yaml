@@ -7,18 +7,18 @@ save_best: True
 weights: False
 mutate_method: ":gene_mutate"
 crossover_method: ":single_point_crossover"
-recurrency: 0.2
+recurrency: 0.3
 total_evals: 50000
-input_start: -1.0
+input_start: -0.8
 # Mutation
 active_mutate: False
-input_mutation_rate: 0.0
+input_mutation_rate: 0.2
 output_mutation_rate: 0.3
 node_mutation_rate: 0.1
 node_size_delta: 0.0
 modify_mutation_rate: 0.0
 # Oneplus settings
-lambda: 1
+lambda: 3
 # GA settings
 ga_population: 200
 ga_elitism_rate: 0.2
