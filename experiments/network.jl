@@ -5,7 +5,7 @@ struct Layer
     trace::Array{Float64}
 end
 
-function Layer(nin::Int64, nout::Int64, cfg::STDPConfig)
+function Layer(nin::Int64, nout::Int64, cfg::STDPConfig, rng::MersenneTwister)
     neurons = zeros(4, nout)
     weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(rng, nin, nout)
                              .+ cfg.weight_mean))
@@ -24,8 +24,8 @@ end
 
 function Network(n_input::Int64, n_hidden::Int64, n_output::Int64,
                  cfg::STDPConfig; rng::MersenneTwister=MersenneTwister(0))
-    hidden = Layer(n_input, n_hidden, cfg)
-    output = Layer(n_hidden, n_output, cfg)
+    hidden = Layer(n_input, n_hidden, cfg, rng)
+    output = Layer(n_hidden, n_output, cfg, rng)
     Network(n_input, n_hidden, n_output, cfg, [hidden, output])
 end
 
