@@ -61,7 +61,7 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfun
     for epoch in 1:train_epochs
         labels = iterate!(network, X, cfg, true, rng=rng)
         acc = randindex(Y, labels)
-        Logging.info(@sprintf("R: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
+        Logging.info(@sprintf("A: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
                               epoch, seed, problem, fname, acc[1], acc[2],
                               acc[3], acc[4]))
     end
@@ -69,7 +69,7 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfun
     # testing
     final_labels = iterate!(network, X, cfg, false, rng=rng)
     acc = randindex(Y, final_labels)
-    Logging.info(@sprintf("T: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
+    Logging.info(@sprintf("S: %d %d %s %s %0.4f %0.4f %0.4f %0.4f",
                           train_epochs, seed, problem, fname, acc[1], acc[2],
                           acc[3], acc[4]))
 

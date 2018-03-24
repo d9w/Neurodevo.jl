@@ -35,7 +35,7 @@ end
 
 test_problem = "yeast"
 test_X, test_Y = get_data("yeast")
-evals = 0
+counter = [0]
 
 function cluster_acc(c::Chromosome, X::Array{Float64}, Y::Array{Int64},
                      pname::String)
@@ -53,11 +53,11 @@ function cluster_acc(c::Chromosome, X::Array{Float64}, Y::Array{Int64},
 end
 
 function cluster_fit(c::Chromosome)
-    evals += 1
-    if evals < 150
+    counter[1] += 1
+    if counter[1] < 150
         p = "spirals"
         return cluster_acc(c, data[p][:X], data[p][:Y], p)
-    elseif evals < 300
+    elseif counter[1] < 300
         p = "iris"
         return 1.0 + cluster_acc(c, data[p][:X], data[p][:Y], p)
     end
@@ -70,7 +70,11 @@ function cluster_fit(c::Chromosome)
 end
 
 function gen_fit(c::Chromosome)
-    cluster_acc(c, test_X, test_Y, test_problem)
+    if counter[1] < 300
+        return 0.0
+    else
+        return cluster_acc(c, test_X, test_Y, test_problem)
+    end
 end
 
 maxfit, best = oneplus(PCGPChromo, 6, 4, cluster_fit; seed=args["seed"],
