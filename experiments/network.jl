@@ -7,6 +7,7 @@ end
 
 function Layer(nin::Int64, nout::Int64, cfg::STDPConfig, rng::MersenneTwister)
     neurons = zeros(4, nout)
+    neurons[1, :] = cfg.vstart
     weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(rng, nin, nout)
                              .+ cfg.weight_mean))
     inhib = cfg.inhib_weight * (1.0 - eye(nout, nout))
@@ -36,7 +37,7 @@ function spike!(network::Network, layer::Layer, input::BitArray)
     float_spikes = Float64.(spikes) * 2.0 - 1.0
     for n in 1:size(layer.neurons, 2)
         nstate = [layer.neurons[:, n]; inputs[n]; float_spikes[n]]
-        layer.neurons[:, n] = network.cfg.neuron_function(nstate)
+        layer.neurons[:, n] += network.cfg.neuron_function(nstate)
     end
     layer.neurons[layer.neurons .< -1.0] .= -1.0
     layer.neurons[layer.neurons .> -1.0] .= 1.0

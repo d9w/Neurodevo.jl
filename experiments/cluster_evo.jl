@@ -54,10 +54,10 @@ end
 
 function cluster_fit(c::Chromosome)
     counter[1] += 1
-    if counter[1] < 150
+    if counter[1] < 75
         p = "spirals"
         return cluster_acc(c, data[p][:X], data[p][:Y], p)
-    elseif counter[1] < 300
+    elseif counter[1] < 150
         p = "iris"
         return 1.0 + cluster_acc(c, data[p][:X], data[p][:Y], p)
     end
@@ -70,7 +70,7 @@ function cluster_fit(c::Chromosome)
 end
 
 function gen_fit(c::Chromosome)
-    if counter[1] < 300
+    if counter[1] < 150
         return 0.0
     else
         return cluster_acc(c, test_X, test_Y, test_problem)
