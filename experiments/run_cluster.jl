@@ -56,7 +56,7 @@ X, Y = get_data(args["problem"])
 n_cluster = length(unique(Y))
 
 stdp_labels = stdp_cluster(
-    X, Y, n_cluster; seed=args["seed"], logfile=args["logfile"],
+    X, Y, n_cluster, x->x; seed=args["seed"], logfile=args["logfile"],
     problem=args["problem"], fname=args["fname"],
     train_epochs=args["train_epochs"], weight_mean=args["weight_mean"],
     weight_std=args["weight_std"], t_train=args["t_train"],

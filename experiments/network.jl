@@ -3,16 +3,19 @@ struct Layer
     weights::Array{Float64}
     inhib::Array{Float64}
     trace::Array{Float64}
+    spikes::BitArray
 end
 
 function Layer(nin::Int64, nout::Int64, cfg::STDPConfig, rng::MersenneTwister)
     neurons = zeros(4, nout)
     neurons[1, :] = cfg.vstart
+    neurons[2, :] = 1.0
+    neurons[3, :] = 0.2*cfg.vstart
     weights = min.(1.0, max.(0.0, cfg.weight_std.*randn(rng, nin, nout)
                              .+ cfg.weight_mean))
     inhib = cfg.inhib_weight * (1.0 - eye(nout, nout))
     trace = zeros(nin, nout)
-    Layer(neurons, weights, inhib, trace)
+    Layer(neurons, weights, inhib, trace, falses(nout))
 end
 
 struct Network
@@ -31,41 +34,39 @@ function Network(n_input::Int64, n_hidden::Int64, n_output::Int64,
 end
 
 function spike!(network::Network, layer::Layer, input::BitArray)
-    spikes = layer.neurons[1, :] .>= network.cfg.vthresh
-    inputs = (input' * layer.weights) - (spikes' * layer.inhib)
+    inputs = (input' * layer.weights) - (layer.spikes' * layer.inhib)
     inputs = max.(-1.0, min.(1.0, inputs))
-    float_spikes = Float64.(spikes) * 2.0 - 1.0
     for n in 1:size(layer.neurons, 2)
-        nstate = [layer.neurons[:, n]; inputs[n]; float_spikes[n]]
-        layer.neurons[:, n] += network.cfg.neuron_function(nstate)
+        nstate = [layer.neurons[:, n]; inputs[n]]
+        fout = network.cfg.neuron_function(nstate)
+        layer.neurons[:, n] .+= fout[1:4]
+        layer.spikes[n] = fout[5] > 0.0
     end
     layer.neurons[layer.neurons .< -1.0] .= -1.0
-    layer.neurons[layer.neurons .> -1.0] .= 1.0
-    spikes
+    layer.neurons[layer.neurons .> 1.0] .= 1.0
+    nothing
 end
 
-function learn!(network::Network, layer::Layer, input_spikes::BitArray,
-                output_spikes::BitArray)
+function learn!(network::Network, layer::Layer, input_spikes::BitArray)
     cfg = network.cfg
     layer.trace[input_spikes, :] .+= cfg.pre_inc
     layer.trace .-= (layer.trace ./ cfg.pre_dt)
-    layer.weights[:, output_spikes] .+= cfg.stdp_lr .* (
-        layer.trace[:, output_spikes] .- cfg.pre_target) .* (
-            (cfg.wmax .- layer.weights[:, output_spikes]).^cfg.stdp_mu)
+    layer.weights[:, layer.spikes] .+= cfg.stdp_lr .* (
+        layer.trace[:, layer.spikes] .- cfg.pre_target) .* (
+            (cfg.wmax .- layer.weights[:, layer.spikes]).^cfg.stdp_mu)
     layer.weights[layer.weights .< 0] .= 0.0
     nothing
 end
 
 function step!(network::Network, input_spikes::BitArray, train::Bool)
-    output_spikes = copy(input_spikes)
     for l in eachindex(network.layers)
-        output_spikes = spike!(network, network.layers[l], input_spikes)
+        spike!(network, network.layers[l], input_spikes)
         if train
-            learn!(network, network.layers[l], input_spikes, output_spikes)
+            learn!(network, network.layers[l], input_spikes)
         end
-        input_spikes = copy(output_spikes)
+        input_spikes = copy(network.layers[l].spikes)
     end
-    output_spikes
+    network.layers[end].spikes
 end
 
 function iterate!(network::Network, X::Array{Float64}, cfg::STDPConfig,
