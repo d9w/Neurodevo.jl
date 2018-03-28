@@ -3,12 +3,16 @@ using CGP
 using YAML
 include("clustering.jl")
 include("datasets.jl")
+include("seeds.jl")
 
 settings = ArgParseSettings()
 @add_arg_table settings begin
     "--seed"
     arg_type = Int
     default = 0
+    "--expert"
+    arg_type = String
+    default = ""
     "--logfile"
     arg_type = String
     default = "stdp.log"
@@ -19,7 +23,7 @@ srand(args["seed"])
 Logging.configure(filename=args["logfile"], level=INFO)
 
 CGP.Config.init("cfg/base.yaml")
-CGP.Config.init("cfg/classic.yaml")
+CGP.Config.init("cfg/functions.yaml")
 scfg = YAML.load_file("cfg/stdp.yaml")
 fname = string(args["seed"])
 
@@ -77,6 +81,11 @@ function gen_fit(c::Chromosome)
     end
 end
 
+expert = nothing
+if args["expert"] == "LIF"
+    expert = to_chromo(lif_graph(-0.65, 0.3))
+end
+
 maxfit, best = oneplus(PCGPChromo, 5, 5, cluster_fit; seed=args["seed"],
-                       record_best=true, record_fitness=gen_fit)
+                       record_best=true, record_fitness=gen_fit, expert=expert)
 Logging.info(@sprintf("E%0.6f", -maxfit))
