@@ -12,21 +12,26 @@ function lif(nstate::Array{Float64}, vstart::Float64, vthresh::Float64)
     outputs
 end
 
-function izhikevich(nstate::Array{Float64}, vstart::Float64, vthresh::Float64,
-                    vscale::Float64; a::Float64=0.02, b::Float64=0.2,
-                    c::Float64=-65.0, d::Float64=2.0)
-    # TODO: write in delta format with new inputs
-    v = nstate[1] * vscale
-    u = nstate[2] * vscale
-    if nstate[6] == 1.0
-        v = c
-        u = u + d
-    end
+# function izhikevich(nstate::Array{Float64}, vstart::Float64, vthresh::Float64,
+#                     vscale::Float64; a::Float64=0.02, b::Float64=0.2,
+#                     c::Float64=-65.0, d::Float64=2.0)
+#     v = nstate[1] * vscale
+#     u = nstate[3] * vscale
+#     fired = 0.0
+#     if nstate[1] >= vthresh
+#         v = c
+#         u = u + d
+#         fired = 1.0
+#     end
 
-    I = nstate[5] * vscale
-    v = v + 0.5 * (0.04 * v^2 + 5 * v + 140 - u + I)
-    v = v + 0.5 * (0.04 * v^2 + 5 * v + 140 - u + I)
-    u = u + a * (b * v - u)
+#     140 / vscale
+#     0.04 * vscale
 
-    [v, u, vscale, 0.0] ./ vscale
-end
+#     I = nstate[5] * vscale
+#     dv = 0.04 * v^2 + 5 * v + 140 - u + I
+#     v = v + 0.5 * (0.04 * v^2 + 5 * v + 140 - u + I)
+#     v = v + 0.5 * (0.04 * v^2 + 5 * v + 140 - u + I)
+#     u = u + a * (b * v - u)
+
+#     [v/vscale-nstate[1], 0.0, u/vscale - nstate[3], 0.0, fired]
+# end
