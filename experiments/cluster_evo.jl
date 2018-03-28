@@ -55,10 +55,10 @@ end
 function cluster_fit(c::Chromosome)
     counter[1] += 1
     if counter[1] < 75
-        p = "spirals"
+        p = "iris"
         return cluster_acc(c, data[p][:X], data[p][:Y], p)
     elseif counter[1] < 150
-        p = "iris"
+        p = "spirals"
         return 1.0 + cluster_acc(c, data[p][:X], data[p][:Y], p)
     end
     fit = 0.0
@@ -77,6 +77,6 @@ function gen_fit(c::Chromosome)
     end
 end
 
-maxfit, best = oneplus(PCGPChromo, 6, 4, cluster_fit; seed=args["seed"],
+maxfit, best = oneplus(PCGPChromo, 5, 5, cluster_fit; seed=args["seed"],
                        record_best=true, record_fitness=gen_fit)
 Logging.info(@sprintf("E%0.6f", -maxfit))

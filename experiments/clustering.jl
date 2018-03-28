@@ -32,7 +32,7 @@ size(X,2)
 """
 function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfunc::Function;
                       seed=0, logfile="stdp.log", problem="iris", fname="lif",
-                      train_epochs=1, n_hidden=size(X, 1), dt=0.001,
+                      train_epochs=1, n_hidden=2*size(X, 1), dt=0.001,
                       weight_mean=0.5, weight_std=0.1, t_train=350, t_blank=150,
                       fr=65.0, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
                       vstart=-65.0, vthresh=30.0, vscale=100.0, wmax=1.0,

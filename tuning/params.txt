@@ -1,5 +1,5 @@
 # name		    switch                    type	    values			[conditions (using R syntax)]
-epochs        "--train_epochs "         i         (1, 10)
+epochs        "--train_epochs "         i         (1, 5)
 weight_mean   "--weight_mean "          r         (0.1, 1.0)
 weight_std    "--weight_std "           r         (0.1, 0.5)
 t_train       "--t_train "              c         (150, 200, 250, 300, 350, 400)
