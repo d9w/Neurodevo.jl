@@ -46,6 +46,15 @@ settings = ArgParseSettings()
     "--inhib_weight"
     arg_type = Float64
     default = 0.1
+    "--ika"
+    arg_type = Float64
+    default = 0.02
+    "--ikb"
+    arg_type = Float64
+    default = 0.2
+    "--ikd"
+    arg_type = Float64
+    default = 2.0
 end
 settings
 
@@ -62,7 +71,8 @@ stdp_labels = stdp_cluster(
     weight_std=args["weight_std"], t_train=args["t_train"],
     t_blank=args["t_blank"], fr=args["fr"], pre_target=args["pre_target"],
     stdp_lr=args["stdp_lr"], stdp_mu=args["stdp_mu"],
-    inhib_weight=args["inhib_weight"])
+    inhib_weight=args["inhib_weight"], ika=args["ika"],
+    ikb=args["ikb"], ikd=args["ikd"])
 
 acc = randindex(stdp_labels, Y)
 

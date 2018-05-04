@@ -13,6 +13,9 @@ settings = ArgParseSettings()
     "--expert"
     arg_type = String
     default = ""
+    "--expfile"
+    arg_type = String
+    default = ""
     "--logfile"
     arg_type = String
     default = "stdp.log"
@@ -26,20 +29,6 @@ CGP.Config.init("cfg/base.yaml")
 CGP.Config.init("cfg/functions.yaml")
 scfg = YAML.load_file("cfg/stdp.yaml")
 fname = string(args["seed"])
-
-problems = ["iris", "spirals"]
-data = Dict()
-for p in problems
-    X, Y = get_data(p)
-    dp = Dict()
-    dp[:X] = X
-    dp[:Y] = Y
-    data[p] = dp
-end
-
-test_problem = "yeast"
-test_X, test_Y = get_data("yeast")
-counter = [0]
 
 function cluster_acc(c::Chromosome, X::Array{Float64}, Y::Array{Int64},
                      pname::String)
@@ -56,36 +45,25 @@ function cluster_acc(c::Chromosome, X::Array{Float64}, Y::Array{Int64},
     acc[1]
 end
 
-function cluster_fit(c::Chromosome)
-    counter[1] += 1
-    if counter[1] < 75
-        p = "iris"
-        return cluster_acc(c, data[p][:X], data[p][:Y], p)
-    elseif counter[1] < 150
-        p = "spirals"
-        return 1.0 + cluster_acc(c, data[p][:X], data[p][:Y], p)
-    end
-    fit = 0.0
-    for p in problems
-        fit += cluster_acc(c, data[p][:X], data[p][:Y], p)
-    end
-    fit /= length(problems)
-    return 2.0 + fit
-end
+irisX, irisY = get_data("iris")
 
-function gen_fit(c::Chromosome)
-    if counter[1] < 150
-        return 0.0
-    else
-        return cluster_acc(c, test_X, test_Y, test_problem)
-    end
-end
+cluster_fit(c::Chromosome) = cluster_acc(c, irisX, irisY, "iris")
 
 expert = nothing
 if args["expert"] == "LIF"
     expert = to_chromo(lif_graph(-0.65, 0.3))
 end
+if args["expfile"] != ""
+    experts = readdlm(args["expfile"], ',')
+    s = mod(args["seed"], size(experts, 1))+1
+    expert = PCGPChromo(experts[s, :], 5, 5)
+end
 
-maxfit, best = oneplus(PCGPChromo, 5, 5, cluster_fit; seed=args["seed"],
-                       record_best=true, record_fitness=gen_fit, expert=expert)
-Logging.info(@sprintf("E%0.6f", -maxfit))
+maxfit, best = oneplus(PCGPChromo, 5, 5, cluster_fit; seed=args["seed"], expert=expert)
+
+yeastX, yeastY = get_data("yeast")
+yeast_acc = cluster_acc(best, yeastX, yeastY, "yeast")
+Logging.info(@sprintf("F: %d %d %0.5f %0.5f %d %d",
+seed, eval_count, maxfit, yeast_acc,
+sum([n.active for n in best.nodes]),
+length(best.nodes)))

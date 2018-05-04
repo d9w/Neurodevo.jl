@@ -1,7 +1,7 @@
 # General settings
-starting_nodes: 50
-static_node_size: 100
-node_size_cap: 150
+starting_nodes: 25
+static_node_size: 50
+node_size_cap: 75
 node_inputs: 2
 save_best: True
 weights: False

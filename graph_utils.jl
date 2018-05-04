@@ -21,7 +21,11 @@ function to_graph(c::Chromosome)
         v = vids[vi]
         n = c.nodes[v]
         f_name = split(split(repr(n.f), ".")[end], "_")[end]
-        set_prop!(mg, vi, :name, LaTeXString(f_name))
+        if f_name == "const"
+            set_prop!(mg, vi, :name, LaTeXString(@sprintf("%0.2f", n.p)))
+        else
+            set_prop!(mg, vi, :name, LaTeXString(f_name))
+        end
         set_prop!(mg, vi, :function, n.f)
         set_prop!(mg, vi, :type, 2)
         set_prop!(mg, vi, :param, n.p)
@@ -48,11 +52,11 @@ function to_graph(c::Chromosome)
     mg
 end
 
-function draw(c::Chromosome, file::String="graph.svg")
+function chromo_draw(c::Chromosome, file::String="graph.pdf")
     mg = to_graph(c)
     names = map(x->get_prop(mg, x, :name), 1:nv(mg))
-    t = plot(mg.graph, names)
-    save(SVG(file), t)
+    t = TikzGraphs.plot(mg.graph, names)
+    TikzPictures.save(TikzPictures.PDF(file), t)
     nothing
 end
 
@@ -68,57 +72,58 @@ function con_to_gene(x::Float64, pos::Float64)::Float64
 end
 
 function get_genes(mg::MetaDiGraph, nin::Int64, nout::Int64)
-    while true
-        genes = rand(nin)
-        sort!(genes, rev=true)
-        node_positions = rand(nv(mg) - nout - nin)
-        sort!(node_positions)
-        positions = [CGP.Config.input_start .* genes; node_positions]
-        outputs = Array{Float64}(nout)
-        for oi in 1:nout
-            vi = oi + (nv(mg) - nout)
-            @assert get_prop(mg, vi, :type) == 1
-            for ed in edges(mg)
-                if ed.dst == vi
-                    outputs[oi] = positions[ed.src]
-                end
+    genes = rand(nin)
+    sort!(genes, rev=true)
+    node_positions = rand(nv(mg) - nout - nin)
+    sort!(node_positions)
+    positions = [CGP.Config.input_start .* genes; node_positions]
+    outputs = Array{Float64}(nout)
+    for oi in 1:nout
+        vi = oi + (nv(mg) - nout)
+        @assert get_prop(mg, vi, :type) == 1
+        for ed in edges(mg)
+            if ed.dst == vi
+                outputs[oi] = positions[ed.src]
             end
-        end
-        genes = [genes; outputs]
-        for vi in (nin+1):(nv(mg)-nout)
-            vprop = props(mg, vi)
-            @assert vprop[:type] == 2
-            ngenes = Array{Float64}(5)
-            ngenes[1] = positions[vi]
-            for ed in edges(mg)
-                if ed.dst == vi
-                    if get_prop(mg, ed, :ci) == 1
-                        ngenes[2] = con_to_gene(positions[ed.src], positions[vi])
-                    end
-                    if get_prop(mg, ed, :ci) == 2
-                        ngenes[3] = con_to_gene(positions[ed.src], positions[vi])
-                    end
-                    if get_prop(mg, ed, :ci) == 3
-                        ngenes[2] = con_to_gene(positions[ed.src], positions[vi])
-                        ngenes[3] = con_to_gene(positions[ed.src], positions[vi])
-                    end
-                end
-            end
-            fid = findfirst(CGP.Config.functions .== vprop[:function])
-            ngenes[4] = fid / length(CGP.Config.functions)
-            if haskey(vprop, :param)
-                ngenes[5] = (vprop[:param] + 1.0) / 2.0
-            else
-                ngenes[5] = rand()
-            end
-            genes = [genes; ngenes]
-        end
-        if all(genes .>= 0.0) && all(genes .<= 1.0)
-            example = CGP.PCGPChromo(nin, nout)
-            genes = [genes; rand(length(example.genes) - length(genes))]
-            return genes
         end
     end
+    genes = [genes; outputs]
+    for vi in (nin+1):(nv(mg)-nout)
+        vprop = props(mg, vi)
+        @assert vprop[:type] == 2
+        ngenes = -ones(5)#Array{Float64}(5)
+        ngenes[1] = positions[vi]
+        for ed in edges(mg)
+            if ed.dst == vi
+                if get_prop(mg, ed, :ci) == 1
+                    ngenes[2] = con_to_gene(positions[ed.src], positions[vi])
+                end
+                if get_prop(mg, ed, :ci) == 2
+                    ngenes[3] = con_to_gene(positions[ed.src], positions[vi])
+                end
+                if get_prop(mg, ed, :ci) == 3
+                    ngenes[2] = con_to_gene(positions[ed.src], positions[vi])
+                    ngenes[3] = con_to_gene(positions[ed.src], positions[vi])
+                end
+            end
+        end
+        fid = findfirst(CGP.Config.functions .== vprop[:function])
+        ngenes[4] = fid / length(CGP.Config.functions)
+        if haskey(vprop, :param)
+            ngenes[5] = (vprop[:param] + 1.0) / 2.0
+        else
+            ngenes[5] = rand()
+        end
+        if ~(all(ngenes .>= 0.0) && all(ngenes .<= 1.0))
+            println(ngenes)
+            println(vi)
+            println(vprop)
+        end
+        genes = [genes; ngenes]
+    end
+    example = CGP.PCGPChromo(nin, nout)
+    genes = [genes; rand(length(example.genes) - length(genes))]
+    return genes
 end
 
 function to_chromo(mg::MetaDiGraph)::PCGPChromo
@@ -143,10 +148,15 @@ function add_node!(mg::MetaDiGraph, i::Int64, f::Function;
                    x::Int64=rand(1:(i-1)), y::Int64=rand(1:(i-1)), p::Float64=rand())
     set_prop!(mg, i, :function, f)
     set_prop!(mg, i, :param, p)
-    add_edge!(mg, Edge(x, i))
-    set_prop!(mg, x, i, :ci, 1)
-    add_edge!(mg, Edge(y, i))
-    set_prop!(mg, y, i, :ci, 2)
+    if x != y
+        add_edge!(mg, Edge(x, i))
+        set_prop!(mg, x, i, :ci, 1)
+        add_edge!(mg, Edge(y, i))
+        set_prop!(mg, y, i, :ci, 2)
+    else
+        add_edge!(mg, Edge(x, i))
+        set_prop!(mg, x, i, :ci, 3)
+    end
     mg
 end
 

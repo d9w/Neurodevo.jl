@@ -31,12 +31,13 @@ clusters. X must be between 0 and 1. Returns an Array{Int64} of labels with
 size(X,2)
 """
 function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfunc::Function;
-                      seed=0, logfile="stdp.log", problem="iris", fname="lif",
+                      seed=10, logfile="stdp.log", problem="iris", fname="lif",
                       train_epochs=1, n_hidden=2*size(X, 1), dt=0.001,
                       weight_mean=0.5, weight_std=0.1, t_train=350, t_blank=150,
                       fr=65.0, pre_dt=20.0, pre_inc=1.0, pre_target=0.4,
                       vstart=-65.0, vthresh=30.0, vscale=100.0, wmax=1.0,
                       stdp_lr=0.0001, stdp_mu=2.0,
+		      ika=0.02, ikb=0.2, ikd=2.0,
                       inhib_weight=0.1)::Array{Int64}
 
     vstart = vstart / vscale; vthresh = vthresh / vscale
@@ -44,7 +45,8 @@ function stdp_cluster(X::Array{Float64}, Y::Array{Int64}, n_cluster::Int64, nfun
     if fname == "lif"
         nfunc = i->lif(i, vstart, vthresh)
     elseif fname == "izhikevich"
-        nfunc = i->izhikevich(i, vstart, vthresh, vscale)
+        nfunc = i->izhikevich(i, vstart, vthresh, vscale;
+				 a=ika, b=ikb, c=vstart/vscale, d=ikd/vscale)
     elseif fname == "fhn"
         nfunc = i->fhn(i, vstart, vthresh)
     end

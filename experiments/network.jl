@@ -80,6 +80,9 @@ function iterate!(network::Network, X::Array{Float64}, cfg::STDPConfig,
             out_spikes += step!(network, input_spikes[:, t], train)
         end
         labels[x] = indmax(out_spikes)
+        #if x > 10 && sum(out_spikes) == 0
+        #   break
+        #end
         # blank input
         input_spikes = falses(network.n_input)
         for t in 1:cfg.t_blank
