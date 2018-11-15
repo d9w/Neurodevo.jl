@@ -1,11 +1,15 @@
 using Gadfly
 using Distributions
 using Colors
+using Compose
+using Cairo
+using Fontconfig
 using DataFrames
 using Query
+using CGP
 
-include("graph_utils.jl")
-include("experiments/seeds.jl")
+# include("graph_utils.jl")
+# include("experiments/seeds.jl")
 
 Gadfly.push_theme(Theme(major_label_font="Droid Sans",
                         minor_label_font="Droid Sans",
@@ -48,17 +52,19 @@ function plot_acc(res::DataFrame, title::String; filename::String="clustering.pd
         ymax=maximum(cres[:ARI])
     end
     cols = [colors[1], colors[2], colors[3]]
-    plt = plot(cres, x=:sid, y=:ARI, color=:Model,
-               Geom.boxplot,
+    cres[:ARI] .= 1 .+ cres[:ARI]
+    plt = Gadfly.plot(cres, x=:sid, y=:ARI, color=:Model,
+               Geom.beeswarm,
                Guide.ylabel(ylabel),
                Guide.xlabel("Model"),
                Guide.xticks(label=false),
                Guide.title(title),
-               Coord.cartesian(ymin=ymin, ymax=ymax),
+                      Scale.y_log10,
+               # Coord.cartesian(ymin=ymin, ymax=ymax),
                Scale.color_discrete_manual(cols...),
                style(key_position=key_position))
 
-    draw(PDF(filename, 10inch, 4inch), plt)
+    plt |> PDF(filename, 10inch, 4inch)
     plt
 end
 
