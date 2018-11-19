@@ -1,6 +1,7 @@
 using Test
 using Neurodev
 
+
 function test_domain(out::Float64)
     @test (out >= -1) && (out <= 1)
 end
@@ -9,18 +10,11 @@ function test_domain(out::Array{Float64})
     @test all((out .>= -1) .& (out .<= 1))
 end
 
-@testset "Controller" begin
-
-    # default configuration
-    cfg = Config()
-
+function test_controller(cfg::Config, c::Controller)
     cell_state = 2.0*rand(cfg.n_cell_state) .- 1.0
     cell_params = 2.0*rand(cfg.n_cell_params) .- 1.0
     branch_state = 2.0*rand(cfg.n_branch_state) .- 1.0
     branch_params = 2.0*rand(cfg.n_branch_params) .- 1.0
-
-    # use default controller for now, switch to test others later
-    c = Controller(cfg)
 
     @testset "Function types" begin
         @test typeof(c.cell_division(
@@ -96,6 +90,19 @@ end
         test_domain(c.input(vcat(cell_params)))
         test_domain(c.output(vcat(cell_params)))
     end
+end
+
+@testset "Default controller" begin
+    cfg = Config()
+    c = Controller(cfg)
+    test_controller(cfg, c)
+end
+
+@testset "Random controller" begin
+    include("../controllers/random.jl")
+    cfg = Config()
+    c = rand_controller(cfg)
+    test_controller(cfg, c)
 end
 
 nothing
