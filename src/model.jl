@@ -1,5 +1,7 @@
-using Grid
-using Distances
+
+struct Model
+    cells::Array{Cell}
+    channels::
 
 function Cell()
   pos = 1.0.+rand(length(DIMS)).*(DIMS-1.0)

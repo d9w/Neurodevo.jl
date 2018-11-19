@@ -1,5 +1,6 @@
 module E4L
 
+include("config.jl")
 include("controller.jl")
 # include("types.jl")
 # include("individual.jl")
@@ -7,8 +8,8 @@ include("controller.jl")
 # include("model.jl")
 # include("inits.jl")
 
-module visualization
+# module visualization
 # include("graph.jl")
-end
+# end
 
 end
