@@ -1,4 +1,3 @@
-# E⁴L
-## Evolving Evolutionary Exploration Environments for Learning
+# Neurodev.jl
 
-See https://github.com/d9w/thesis for explanation.
+A framework for artificial developmental neural networks, in Julia
