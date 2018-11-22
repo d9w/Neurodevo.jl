@@ -1,0 +1,15 @@
+v_thresh: 0.7
+v_reset: 0.0
+v_leak: 0.99
+v_thresh_inc: 0.1
+v_thresh_dec: 0.9
+divide_age: 0.99
+divide_act: 0.1
+cell_apop: 0.1
+weight_mean: 0.2
+weight_std: 0.3
+spike_exc: 1.0
+spike_inhib: 0.1
+trace_dec: 0.9
+pre_target: 0.2
+stdp_lr: 0.01

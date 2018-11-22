@@ -1,7 +1,6 @@
 using Test
 using Neurodev
 
-
 function test_domain(out::Float64)
     @test (out >= -1) && (out <= 1)
 end
@@ -10,85 +9,88 @@ function test_domain(out::Array{Float64})
     @test all((out .>= -1) .& (out .<= 1))
 end
 
-function test_controller(cfg::Config, c::Controller)
-    cell_state = 2.0*rand(cfg.n_cell_state) .- 1.0
-    cell_params = 2.0*rand(cfg.n_cell_params) .- 1.0
-    branch_state = 2.0*rand(cfg.n_branch_state) .- 1.0
-    branch_params = 2.0*rand(cfg.n_branch_params) .- 1.0
+function scale(ins::Float64)
+    2.0 * ins - 1.0
+end
 
-    @testset "Function types" begin
-        @test typeof(c.cell_division(
-            vcat(cell_params, cell_state))) == Bool
-        @test typeof(c.new_cell_params(
-            vcat(cell_params, cell_state))) == Array{Float64,1}
-        @test typeof(c.cell_state_update(
-            vcat(cell_params, cell_state))) == Array{Float64,1}
-        @test typeof(c.cell_param_update(
-            vcat(cell_params, cell_state, rand()))) == Array{Float64,1}
-        @test typeof(c.cell_death(
-            vcat(cell_params, cell_state))) == Bool
+function scale(ins::Array{Float64})
+    (2.0 .* ins) .- 1.0
+end
 
-        @test typeof(c.channel_branching(
-            vcat(branch_params, branch_state))) == Bool
-        @test typeof(c.new_branch_params(
-            vcat(branch_params, branch_state))) == Array{Float64,1}
-        @test typeof(c.branch_state_update(
-            vcat(branch_params, branch_state))) == Array{Float64,1}
-        @test typeof(c.branch_param_update(
-            vcat(branch_params, branch_state, rand()))) == Array{Float64,1}
-        @test typeof(c.branch_connect(
-            vcat(branch_params, branch_state, cell_params, cell_state))) == Array{Float64,1}
-        @test typeof(c.branch_disconnect(
-            vcat(branch_params, branch_state, cell_params, cell_state, rand()))) == Bool
-        @test typeof(c.branch_pruning(
-            vcat(branch_params, branch_state))) == Bool
+function test_controller(cfg::Dict, c::Controller)
+    cell_state() = scale(rand(cfg["n_cell_state"]))
+    cell_params() = scale(rand(cfg["n_cell_params"]))
+    conn_state() = scale(rand(cfg["n_conn_state"]))
+    conn_params() = scale(rand(cfg["n_conn_params"]))
 
-        @test typeof(c.broadcast_weight(
-            vcat(cell_params, cell_params))) == Float64
-        @test typeof(c.input(
-            vcat(cell_params))) == Array{Float64, 1}
-        @test typeof(c.output(
-            vcat(cell_params))) == Array{Float64, 1}
+    @testset "Cell division" begin
+        outs = c.cell_division(cell_params())
+        @test typeof(outs) == Bool
+        @test length(outs) == 1
     end
 
-    @testset "Outputs sizes" begin
-        @test length(c.new_cell_params(
-            vcat(cell_params, cell_state))) == cfg.n_cell_params
-        @test length(c.cell_state_update(
-            vcat(cell_params, cell_state))) == cfg.n_cell_state
-        @test length(c.cell_param_update(
-            vcat(cell_params, cell_state, rand()))) == cfg.n_cell_params
-
-        @test length(c.new_branch_params(
-            vcat(branch_params, branch_state))) == cfg.n_branch_params
-        @test length(c.branch_state_update(
-            vcat(branch_params, branch_state))) == cfg.n_branch_state
-        @test length(c.branch_param_update(
-            vcat(branch_params, branch_state, rand()))) == cfg.n_branch_params
-        @test length(c.branch_connect(
-            vcat(branch_params, branch_state, cell_params, cell_state))) == 2
-
-        @test length(c.input(
-            vcat(cell_params))) == 2
-        @test length(c.output(
-            vcat(cell_params))) == 2
+    @testset "New cell params" begin
+        outs = c.new_cell_params(cell_params())
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_cell_params"]
+        test_domain(outs)
     end
 
-    @testset "Output domain" begin
-        test_domain(c.new_cell_params(vcat(cell_params, cell_state)))
-        test_domain(c.cell_state_update(vcat(cell_params, cell_state)))
-        test_domain(c.cell_param_update(vcat(cell_params, cell_state, rand())))
+    @testset "Cell death" begin
+        outs = c.cell_death(cell_params())
+        @test typeof(outs) == Bool
+        @test length(outs) == 1
+    end
 
-        test_domain(c.new_branch_params(vcat(branch_params, branch_state)))
-        test_domain(c.branch_state_update(vcat(branch_params, branch_state)))
-        test_domain(c.branch_param_update(vcat(branch_params, branch_state,
-                                               rand())))
-        test_domain(c.branch_connect(vcat(branch_params, branch_state,
-                                          cell_params, cell_state)))
+    @testset "Cell state update" begin
+        outs = c.cell_state_update(
+            vcat(cell_params(), cell_state(), scale(rand(cfg["n_channels"]))))
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_cell_state"] + cfg["n_channels"]
+        test_domain(outs)
+    end
 
-        test_domain(c.broadcast_weight(vcat(cell_params, cell_params)))
-        test_domain(c.input(vcat(cell_params)))
-        test_domain(c.output(vcat(cell_params)))
+    @testset "Cell param update" begin
+        outs = c.cell_param_update(vcat(cell_params(), cell_state()))
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_cell_params"]
+        test_domain(outs)
+    end
+
+    @testset "Connect" begin
+        outs = c.connect(vcat(cell_params(), cell_params()))
+        @test typeof(outs) == Bool
+        @test length(outs) == 1
+    end
+
+    @testset "New conn params" begin
+        outs = c.new_conn_params(vcat(cell_params(), cell_params()))
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_conn_params"]
+        test_domain(outs)
+    end
+
+    @testset "Disconnect" begin
+        outs = c.disconnect(
+            vcat(cell_params(), cell_params(), conn_params(), conn_state()))
+        @test typeof(outs) == Bool
+        @test length(outs) == 1
+    end
+
+    @testset "Conn state update" begin
+        outs = c.conn_state_update(
+            vcat(conn_params(), conn_state(), scale(rand(cfg["n_channels"]))))
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_conn_state"] + cfg["n_channels"]
+        test_domain(outs)
+    end
+
+    @testset "Conn param update" begin
+        outs = c.conn_param_update(
+            vcat(cell_params(), cell_params(), conn_params(), conn_state()))
+        @test typeof(outs) == Array{Float64,1}
+        @test length(outs) == cfg["n_conn_params"]
+        test_domain(outs)
     end
 end
 
@@ -99,9 +101,20 @@ end
 end
 
 @testset "Random controller" begin
-    include("../controllers/random.jl")
     cfg = Config()
     c = rand_controller(cfg)
+    test_controller(cfg, c)
+end
+
+@testset "Static controller" begin
+    cfg = Config(Config(), "cfg/static.yaml")
+    c = static_controller(cfg)
+    test_controller(cfg, c)
+end
+
+@testset "SNN controller" begin
+    cfg = Config(Config(), "cfg/snn.yaml")
+    c = snn_controller(cfg)
     test_controller(cfg, c)
 end
 
