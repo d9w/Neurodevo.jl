@@ -5,5 +5,6 @@ using Neurodev
 # @Logging.configure(level=DEBUG)
 
 include("test/controller.jl")
+include("test/model.jl")
 # include("test/individual.jl")
 # include("test/environment.jl")
