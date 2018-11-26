@@ -1,4 +1,4 @@
-export Model, step!, set_input!, get_output, reward!
+export Model, set_input!, get_output, reward!
 
 struct Model
     cfg::Dict
@@ -17,24 +17,32 @@ function Model(cfg::Dict, cont::Controller)
     Model(cfg, cont, cells, inputs, outputs, state)
 end
 
-function step!(m::Model)
-    nothing
-end
-
 function set_input!(m::Model, inputs::Array{Float64})
+    for i in eachindex(inputs)
+        m.inputs[i][].inputs[1] = inputs[i]
+    end
     nothing
 end
 
 function get_output(m::Model)
-    rand(length(m.outputs))
-end
-
-function step!(m::Model, inputs::Array{Float64})
-    set_input!(m, inputs)
-    step!(m)
-    get_output(m)
+    map(i->m.outputs[i][].outputs[1], eachindex(m.outputs))
 end
 
 function reward!(m::Model, reward::Array{Float64})
+    for i in eachindex(reward)
+        m.outputs[i][].inputs[2] = reward[i]
+    end
     nothing
+end
+
+function get_conns(m::Model, cell::Cell)
+    conns = Array{Conn{Cell}}(undef, 0)
+    for c in m.cells
+        for conn in c.conns
+            if conn.dest[] == cell
+                push!(conns, conn)
+            end
+        end
+    end
+    conns
 end

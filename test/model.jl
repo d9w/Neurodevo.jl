@@ -9,7 +9,10 @@ function test_domain(out::Array{Float64})
     @test all((out .>= -1) .& (out .<= 1))
 end
 
-function test_model(m::Model)
+function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
+    @test length(m.cells) == nin + nout + nhidden
+    @test length(m.inputs) == nin
+    @test length(m.outputs) == nout
     @test length(m.cells) < m.cfg["cells_max"]
     for cell in m.cells
         test_domain(cell.inputs)
@@ -46,25 +49,25 @@ end
     @testset "Layered" begin
         m = Model(cfg, c)
         layered_init!(m, nin, nout)
-        test_model(m)
+        test_model(m, nin, nout, nin)
     end
 
     @testset "Layered single cell" begin
         m = Model(cfg, c)
         layered_init!(m, nin, nout; nhidden=1)
-        test_model(m)
+        test_model(m, nin, nout, 1)
     end
 
     @testset "Random cell" begin
         m = Model(cfg, c)
         random_init!(m, nin, nout)
-        test_model(m)
+        test_model(m, nin, nout, nin)
     end
 
     @testset "Random single cell" begin
         m = Model(cfg, c)
         random_init!(m, nin, nout; nhidden=1)
-        test_model(m)
+        test_model(m, nin, nout, 1)
     end
 end
 
@@ -77,38 +80,39 @@ end
 
     @testset "Initialize" begin
         random_init!(m, nin, nout)
-        test_model(m)
+        test_model(m, nin, nout, nin)
     end
 
     @testset "Input" begin
         set_input!(m, rand(nin))
-        test_model(m)
+        test_model(m, nin, nout, nin)
     end
 
     @testset "Step" begin
         for i in 1:5
             step!(m)
-            test_model(m)
+            test_model(m, nin, nout, nin)
         end
     end
 
     @testset "Output" begin
         outputs = get_output(m)
-        test_model(m)
+        test_model(m, nin, nout, nin)
         test_domain(outputs)
         @test length(outputs) == nout
     end
 
     @testset "Reward" begin
         reward!(m, rand(nout))
-        test_model(m)
+        test_model(m, nin, nout, nin)
     end
 
     @testset "Full step" begin
         for i in 1:5
-            @timev outputs = step!(m, rand(nin))
+            println("Step $i")
+            @time outputs = step!(m, rand(nin))
             reward!(m, rand(nout))
-            test_model(m)
+            test_model(m, nin, nout, nin)
             test_domain(outputs)
             @test length(outputs) == nout
         end

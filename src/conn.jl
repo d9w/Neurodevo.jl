@@ -6,11 +6,11 @@ struct Conn{T}
     state::Array{Float64}
     params::Array{Float64}
     source::Ref{T}
-    cells::Array{Ref{T}}
+    dest::Ref{T}
 end
 
-function Conn{T}(cfg::Dict, source::Ref{T}, params::Array{Float64}) where T
+function Conn{T}(cfg::Dict, source::T, dest::T, params::Array{Float64}) where T
     Conn(zeros(cfg["n_channels"]), zeros(cfg["n_channels"]),
          zeros(cfg["n_conn_state"]), params,
-         source, Array{Conn{T}})
+         Ref(source), Ref(dest))
 end
