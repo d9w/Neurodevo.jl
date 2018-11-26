@@ -1,41 +1,30 @@
 using Test
 using Neurodev
 
-function test_domain(out::Float64)
-    @test (out >= -1) && (out <= 1)
-end
-
-function test_domain(out::Array{Float64})
-    @test all((out .>= -1) .& (out .<= 1))
-end
-
 function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
-    @test length(m.cells) == nin + nout + nhidden
-    @test length(m.inputs) == nin
-    @test length(m.outputs) == nout
     @test length(m.cells) < m.cfg["cells_max"]
     for cell in m.cells
-        test_domain(cell.inputs)
+        @test all(cell.inputs .>= -1.0)
+        @test all(cell.inputs .<= 1.0)
         @test length(cell.inputs) == m.cfg["n_channels"]
-        test_domain(cell.outputs)
+        @test all(cell.outputs .>= -1.0)
+        @test all(cell.outputs .<= 1.0)
         @test length(cell.outputs) == m.cfg["n_channels"]
-        test_domain(cell.state)
+        @test all(cell.state .>= -1.0)
+        @test all(cell.state .<= 1.0)
         @test length(cell.state) == m.cfg["n_cell_state"]
-        test_domain(cell.params)
+        @test all(cell.params .>= -1.0)
+        @test all(cell.params .<= 1.0)
         @test length(cell.params) == m.cfg["n_cell_params"]
         for conn in cell.conns
-            test_domain(conn.inputs)
-            @test length(conn.inputs) == m.cfg["n_channels"]
-            test_domain(conn.outputs)
-            @test length(conn.outputs) == m.cfg["n_channels"]
-            test_domain(conn.state)
+            @test all(conn.state .>= -1.0)
+            @test all(conn.state .<= 1.0)
             @test length(conn.state) == m.cfg["n_conn_state"]
-            test_domain(conn.params)
+            @test all(conn.params .>= -1.0)
+            @test all(conn.params .<= 1.0)
             @test length(conn.params) == m.cfg["n_conn_params"]
             @test conn.source[] === cell
-            for c in eachindex(conn.cells)
-                @test conn.cells[c][] in m.cells
-            end
+            @test conn.dest[] in m.cells
         end
     end
 end
@@ -77,10 +66,14 @@ end
     m = Model(cfg, c)
     nin = rand(5:10)
     nout = rand(5:10)
+    nhidden = nin
 
     @testset "Initialize" begin
         random_init!(m, nin, nout)
         test_model(m, nin, nout, nin)
+        @test length(m.cells) == nin + nout + nhidden
+        @test length(m.inputs) == nin
+        @test length(m.outputs) == nout
     end
 
     @testset "Input" begin
@@ -98,7 +91,8 @@ end
     @testset "Output" begin
         outputs = get_output(m)
         test_model(m, nin, nout, nin)
-        test_domain(outputs)
+        @test all(outputs .>= -1.0)
+        @test all(outputs .<= 1.0)
         @test length(outputs) == nout
     end
 
@@ -109,12 +103,47 @@ end
 
     @testset "Full step" begin
         for i in 1:5
-            println("Step $i")
+            println("Base controller step $i")
             @time outputs = step!(m, rand(nin))
             reward!(m, rand(nout))
             test_model(m, nin, nout, nin)
-            test_domain(outputs)
+            @test all(outputs .>= -1.0)
+            @test all(outputs .<= 1.0)
             @test length(outputs) == nout
         end
     end
+end
+
+function controller_test(cont_constructor::Function; cfg::Dict=Config())
+    c = cont_constructor(cfg)
+    m = Model(cfg, c)
+    nin = rand(5:10)
+    nout = rand(5:10)
+    random_init!(m, nin, nout)
+
+    @testset "Full step" begin
+        for i in 1:5
+            println(string(cont_constructor, " step ", i))
+            @time outputs = step!(m, rand(nin))
+            reward!(m, rand(nout))
+            test_model(m, nin, nout, nin)
+            @test all(outputs .>= -1.0)
+            @test all(outputs .<= 1.0)
+            @test length(outputs) == nout
+        end
+    end
+end
+
+@testset "Random controller" begin
+    controller_test(rand_controller)
+end
+
+@testset "Static controller" begin
+    controller_test(static_controller;
+                    cfg = Config(Config(), "cfg/static.yaml"))
+end
+
+@testset "SNN controller" begin
+    controller_test(snn_controller;
+                    cfg = Config(Config(), "cfg/snn.yaml"))
 end

@@ -1,5 +1,4 @@
-using Neurodev
-using Random
+export rand_controller
 
 function rand_controller(cfg::Dict)
     Random.seed!(cfg["seed"])

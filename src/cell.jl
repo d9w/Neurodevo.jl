@@ -1,6 +1,6 @@
 export Cell
 
-struct Cell
+mutable struct Cell
     inputs::Array{Float64}
     outputs::Array{Float64}
     state::Array{Float64}

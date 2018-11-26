@@ -6,6 +6,7 @@ using Random
 include("config.jl")
 include("controller.jl")
 include("controllers/random.jl")
+include("controllers/const.jl")
 include("controllers/static.jl")
 include("controllers/snn.jl")
 include("conn.jl")

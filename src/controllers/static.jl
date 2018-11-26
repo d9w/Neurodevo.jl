@@ -21,7 +21,7 @@ end
 
 function static_gen_cell_param_update(cfg::Dict)
     function static_cell_param_update(inputs::Array{Float64})
-        cell_params = copy(inputs[1:cfg["n_cell_params"]])
+        cell_params = inputs[1:cfg["n_cell_params"]]
         cell_state = @view inputs[(cfg["n_cell_params"]+1):end]
         cell_params[4] = cell_state[1]
         cell_params[5] = cell_state[2]

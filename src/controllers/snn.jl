@@ -67,12 +67,12 @@ function snn_gen_new_conn_params(cfg::Dict)
         # inputs: c1 params, c2 params
         c1 = @view inputs[1:cfg["n_cell_params"]]
         c2 = @view inputs[(cfg["n_cell_params"]+1):end]
-        weights = zeros(cfg["n_conn_params"])
+        params = zeros(cfg["n_conn_params"])
         if c2[3] > c1[3]
-            weights[1] = randn()*cfg["weight_std"] + cfg["weight_mean"]
+            params[1] = randn()*cfg["weight_std"] + cfg["weight_mean"]
         end
-        weights[2] = exp(-euclidean(c1[1:3], c2[1:3]))
-        weights
+        params[2] = exp(-euclidean(c1[1:3], c2[1:3]))
+        max.(-1.0, min.(1.0, params))
     end
     snn_new_conn_params
 end
@@ -103,8 +103,8 @@ function snn_gen_conn_param_update(cfg::Dict)
                               .+ (1:cfg["n_conn_state"]))]
         dw = state[2] * cfg["stdp_lr"] * (
             (state[1] - cfg["pre_target"]) * (1.0 - params[1]))
-        params[1] = max(-1.0, min(1.0, params[1] + dw))
-        params
+        params[1] += dw
+        max.(-1.0, min.(1.0, params))
     end
     snn_conn_param_update
 end

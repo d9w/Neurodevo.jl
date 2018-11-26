@@ -1,4 +1,4 @@
-export Controller, rand_controller
+export Controller
 
 struct Controller
     cell_division::Function # cell params -> bool
