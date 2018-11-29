@@ -1,4 +1,4 @@
-module Neurodev
+module Neurodevo
 
 using Distances
 using Random

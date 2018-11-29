@@ -1,5 +1,5 @@
 using Test
-using Neurodev
+using Neurodevo
 
 @testset "Step tests" begin
     cfg = Config()
@@ -11,7 +11,7 @@ using Neurodev
     random_init!(m, nin, nout)
 
     @testset "Update cell state" begin
-        Neurodev.update_cell_states!(m)
+        Neurodevo.update_cell_states!(m)
         for cell in m.cells
             @test all(cell.state .== ccon)
             @test all(cell.outputs .== ccon)
@@ -20,7 +20,7 @@ using Neurodev
     end
 
     @testset "Update conn state" begin
-        Neurodev.update_conn_states!(m)
+        Neurodevo.update_conn_states!(m)
         for cell in m.cells
             @test all(cell.inputs .<= 1.0)
             @test all(cell.inputs .>= -1.0)
@@ -31,7 +31,7 @@ using Neurodev
     end
 
     @testset "Update params" begin
-        Neurodev.update_params!(m)
+        Neurodevo.update_params!(m)
         for cell in m.cells
             @test all(cell.params .== ccon)
             for conn in cell.conns
@@ -42,7 +42,7 @@ using Neurodev
 
     @testset "Add cells" begin
         ncells = length(m.cells)
-        Neurodev.add_cells!(m)
+        Neurodevo.add_cells!(m)
         @test length(m.cells) == 2 * ncells
         for i in (ncells+1):length(m.cells)
             @test all(m.cells[i].params .== ccon)
@@ -50,7 +50,7 @@ using Neurodev
     end
 
     @testset "Remove cells" begin
-        Neurodev.remove_cells!(m)
+        Neurodevo.remove_cells!(m)
         @test length(m.cells) == nin + nout
         for i in eachindex(m.cells)
             @test m.cells[i].interface
@@ -58,14 +58,14 @@ using Neurodev
     end
 
     @testset "Connect cells" begin
-        Neurodev.connect_cells!(m)
+        Neurodevo.connect_cells!(m)
         for cell in m.cells
             @test length(cell.conns) == length(m.cells)
         end
     end
 
     @testset "Disconnect cells" begin
-        Neurodev.disconnect_cells!(m)
+        Neurodevo.disconnect_cells!(m)
         for cell in m.cells
             @test length(cell.conns) == 0
         end

@@ -1,4 +1,4 @@
-using Neurodev
+using Neurodevo
 
 include("test/controller.jl")
 include("test/step.jl")
