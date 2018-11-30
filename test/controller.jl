@@ -118,4 +118,12 @@ end
     test_controller(cfg, c)
 end
 
+@testset "CGP controller" begin
+    include("../evo/cgp.jl")
+    cfg = Config()
+    c = cgp_controller(cfg)
+    test_controller(cfg, c)
+end
+
+
 nothing

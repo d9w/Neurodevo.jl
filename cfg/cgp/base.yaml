@@ -1,15 +1,17 @@
-# General settings
-starting_nodes: 25
-static_node_size: 50
-node_size_cap: 75
-node_inputs: 2
-save_best: True
+# Used settings
+recurrency: 0.0
+static_node_size: 20
 weights: False
+input_start: -1.0
+node_inputs: 2
+# Evolutionary settings
 mutate_method: ":gene_mutate"
 crossover_method: ":single_point_crossover"
-recurrency: 0.3
+starting_nodes: 25
+node_size_cap: 75
+save_best: True
+# Unused settings
 total_evals: 50000
-input_start: -0.8
 # Mutation
 active_mutate: False
 input_mutation_rate: 0.2
@@ -19,8 +21,3 @@ node_size_delta: 0.0
 modify_mutation_rate: 0.0
 # Oneplus settings
 lambda: 3
-# GA settings
-ga_population: 200
-ga_elitism_rate: 0.2
-ga_crossover_rate: 0.4
-ga_mutation_rate: 0.2

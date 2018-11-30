@@ -1,12 +1,6 @@
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
-[[CGP]]
-deps = ["Distributed", "Logging", "SharedArrays"]
-path = "/home/d9w/Projects/cgp/CGP.jl"
-uuid = "4fd9c4f4-07f5-549d-bd68-3a67ae5bbbb9"
-version = "0.0.0"
-
 [[Codecs]]
 deps = ["Test"]
 git-tree-sha1 = "70885e5e038cba1c4c17a84ad6c40756e10a4fb5"

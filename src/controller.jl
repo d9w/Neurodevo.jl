@@ -15,16 +15,16 @@ struct Controller
 end
 
 function Controller(cfg::Dict)
-    cell_division = (x...) -> false
-    new_cell_params = (x...) -> zeros(cfg["n_cell_params"])
-    cell_death = (x...) -> false
-    cell_state_update = (x...) -> zeros(cfg["n_cell_state"] + cfg["n_channels"])
-    cell_param_update = (x...) -> zeros(cfg["n_cell_params"])
-    connect = (x...) -> false
-    new_conn_params = (x...) -> zeros(cfg["n_channels"])
-    disconnect = (x...) -> false
-    conn_state_update = (x...) -> zeros(cfg["n_conn_state"] + cfg["n_channels"])
-    conn_param_update = (x...) -> zeros(cfg["n_conn_params"])
+    cell_division(x) = false
+    new_cell_params(x) = zeros(cfg["n_cell_params"])
+    cell_death(x) = false
+    cell_state_update(x) = zeros(cfg["n_cell_state"] + cfg["n_channels"])
+    cell_param_update(x) = zeros(cfg["n_cell_params"])
+    connect(x) = false
+    new_conn_params(x) = zeros(cfg["n_channels"])
+    disconnect(x) = false
+    conn_state_update(x) = zeros(cfg["n_conn_state"] + cfg["n_channels"])
+    conn_param_update(x) = zeros(cfg["n_conn_params"])
 
     Controller(cell_division, new_cell_params, cell_death,
                cell_state_update, cell_param_update,
