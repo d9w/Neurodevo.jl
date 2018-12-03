@@ -1,6 +1,6 @@
 # Used settings
 recurrency: 0.0
-static_node_size: 20
+static_node_size: 40
 weights: False
 input_start: -1.0
 node_inputs: 2

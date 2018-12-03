@@ -8,9 +8,9 @@ function evaluation(ind::NeurodevoInd)
     nout = length(unique(Y))
 
     cfg = Config("cfg/evo.yaml")
-    c = cgp_controller(cfg, ind.genes)
+    c = cgp_controller(cfg, ind.genes; cinds=[4 5 9 10])
     m = Model(cfg, c)
-    layered_init!(m, nin, nout; nhidden=1)
+    layered_init!(m, nin, nout)
     for i in 1:m.cfg["T_devo"]
         Neurodevo.step!(m)
     end

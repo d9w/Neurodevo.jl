@@ -8,8 +8,8 @@ end
 
 function NeurodevoInd(cfg::Dict)
     neuro_cfg = Config("cfg/evo.yaml")
-    chromos = make_chromos!(neuro_cfg)
-    genes = Array{Array{Float64}}(undef, 10)
+    chromos = make_chromos!(neuro_cfg; cinds=[4 5 9 10])
+    genes = Array{Array{Float64}}(undef, 4)
     for i in eachindex(chromos)
         genes[i] = chromos[i].genes
     end
