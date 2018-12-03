@@ -29,24 +29,24 @@ end
 
 function make_controller(cfg::Dict)
     chromos = cfg["chromosomes"]
-    dc = Controller(cfg)
-    # cell_division(x::Array{Float64}) = process(chromos[1], x)[1] > 0
-    # new_cell_params(x::Array{Float64}) = process(chromos[2], x)
-    # cell_death(x::Array{Float64}) = process(chromos[3], x)[1] > 0
-    cell_state_update(x::Array{Float64}) = process(chromos[1], x)
-    cell_param_update(x::Array{Float64}) = process(chromos[2], x)
-    # connect(x::Array{Float64}) = process(chromos[6], x)[1] > 0
-    connect(x::Array{Float64}) = true
-    # new_conn_params(x::Array{Float64}) = process(chromos[7], x)
-    new_conn_params(x::Array{Float64}) = rand(cfg["n_cell_params"])
-    # disconnect(x::Array{Float64}) = process(chromos[8], x)[1] > 0
-    conn_state_update(x::Array{Float64}) = process(chromos[3], x)
-    conn_param_update(x::Array{Float64}) = process(chromos[4], x)
+    snnc = snn_controller(cfg)
+    cell_division(x::Array{Float64}) = process(chromos[1], x)[1] > 0
+    new_cell_params(x::Array{Float64}) = process(chromos[2], x)
+    cell_death(x::Array{Float64}) = process(chromos[3], x)[1] > 0
+    # cell_state_update(x::Array{Float64}) = process(chromos[1], x)
+    # cell_param_update(x::Array{Float64}) = process(chromos[2], x)
+    connect(x::Array{Float64}) = process(chromos[4], x)[1] > 0
+    # connect(x::Array{Float64}) = true
+    new_conn_params(x::Array{Float64}) = process(chromos[5], x)
+    # new_conn_params(x::Array{Float64}) = rand(cfg["n_cell_params"])
+    disconnect(x::Array{Float64}) = process(chromos[6], x)[1] > 0
+    # conn_state_update(x::Array{Float64}) = process(chromos[3], x)
+    # conn_param_update(x::Array{Float64}) = process(chromos[4], x)
 
-    Controller(dc.cell_division, dc.new_cell_params, dc.cell_death,
-               cell_state_update, cell_param_update,
-               connect, new_conn_params, dc.disconnect,
-               conn_state_update, conn_param_update)
+    Controller(cell_division, new_cell_params, cell_death,
+               snnc.cell_state_update, snnc.cell_param_update,
+               connect, new_conn_params, disconnect,
+               snnc.conn_state_update, snnc.conn_param_update)
     # Controller(cell_division, new_cell_params, cell_death,
     #            cell_state_update, cell_param_update,
     #            connect, new_conn_params, disconnect,

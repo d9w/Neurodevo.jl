@@ -1,5 +1,6 @@
 using Darwin
 import Darwin: uniform_mutation
+import Base.isless
 
 struct NeurodevoInd <: Individual
     genes::Array{Array{Float64}}
@@ -7,14 +8,18 @@ struct NeurodevoInd <: Individual
 end
 
 function NeurodevoInd(cfg::Dict)
-    neuro_cfg = Config("cfg/evo.yaml")
-    chromos = make_chromos!(neuro_cfg; cinds=[4 5 9 10])
-    genes = Array{Array{Float64}}(undef, 4)
+    neuro_cfg = Config(["cfg/evo.yaml", "cfg/snn.yaml"])
+    chromos = make_chromos!(neuro_cfg; cinds=[1 2 3 6 7 8])
+    genes = Array{Array{Float64}}(undef, length(chromos))
     for i in eachindex(chromos)
         genes[i] = chromos[i].genes
     end
     fitness = -Inf*ones(cfg["n_fitness"])
     NeurodevoInd(genes, fitness)
+end
+
+function isless(i1::NeurodevoInd, i2::NeurodevoInd)
+    maximum(i1.fitness) .< maximum(i2.fitness)
 end
 
 function uniform_mutation(parent::NeurodevoInd; m_rate=0.1)

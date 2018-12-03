@@ -1,5 +1,5 @@
 seed: 0
-n_genes: 4
+n_genes: 6
 n_fitness: 10
 n_selection: 3
 n_population: 100
