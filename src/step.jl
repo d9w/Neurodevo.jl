@@ -40,7 +40,7 @@ function add_cells!(m::Model)
     new_cells = Array{Cell}(undef, 0)
     for cell in m.cells
         div = m.cont.cell_division(cell.params)
-        if div
+        if div && ((length(m.cells) + length(new_cells)) < m.cfg["cells_max"])
             params = m.cont.new_cell_params(cell.params)
             cell = Cell(m.cfg, params)
             push!(new_cells, cell)

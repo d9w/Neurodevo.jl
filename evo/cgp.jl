@@ -12,18 +12,18 @@ function make_chromos!(cfg::Dict)
         chromos[i] = CGP.PCGPChromo(nins[i], nouts[i])
     end
     cfg["chromosomes"] = chromos
-    cfg
+    chromos
 end
 
 function make_chromos!(cfg::Dict, genes::Array{Array{Float64}})
-    chromos = Array{ctype}(undef, 10)
+    chromos = Array{CGP.PCGPChromo}(undef, 10)
     nins = Neurodevo.input_lengths(cfg)
     nouts = Neurodevo.output_lengths(cfg)
     for i in 1:10
         chromos[i] = CGP.PCGPChromo(genes[i], nins[i], nouts[i])
     end
     cfg["chromosomes"] = chromos
-    cfg
+    chromos
 end
 
 function make_controller(cfg::Dict)

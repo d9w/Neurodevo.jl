@@ -1,6 +1,3 @@
-using Test
-using Neurodevo
-
 @testset "Step tests" begin
     cfg = Config()
     ccon = rand() * 0.51 + 0.49

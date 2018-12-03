@@ -1,6 +1,3 @@
-using Test
-using Neurodevo
-
 function test_domain(out::Float64)
     @test (out >= -1) && (out <= 1)
 end

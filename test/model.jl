@@ -1,6 +1,3 @@
-using Test
-using Neurodevo
-
 function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
     @test length(m.cells) < m.cfg["cells_max"]
     for cell in m.cells
