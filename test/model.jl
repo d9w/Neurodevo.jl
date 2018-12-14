@@ -1,12 +1,12 @@
 function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
-    @test length(m.cells) < m.cfg["cells_max"]
+    @test length(m.cells) <= m.cfg["cells_max"]
+    nconns = 0
     for cell in m.cells
-        @test all(cell.inputs .>= -1.0)
-        @test all(cell.inputs .<= 1.0)
-        @test length(cell.inputs) == m.cfg["n_channels"]
-        @test all(cell.outputs .>= -1.0)
-        @test all(cell.outputs .<= 1.0)
-        @test length(cell.outputs) == m.cfg["n_channels"]
+        nconns += length(cell.conns)
+        @test cell.input >= -1.0
+        @test cell.input <= 1.0
+        @test cell.output >= -1.0
+        @test cell.output <= 1.0
         @test all(cell.state .>= -1.0)
         @test all(cell.state .<= 1.0)
         @test length(cell.state) == m.cfg["n_cell_state"]
@@ -14,16 +14,30 @@ function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
         @test all(cell.params .<= 1.0)
         @test length(cell.params) == m.cfg["n_cell_params"]
         for conn in cell.conns
+            @test conn.input >= -1.0
+            @test conn.input <= 1.0
             @test all(conn.state .>= -1.0)
             @test all(conn.state .<= 1.0)
             @test length(conn.state) == m.cfg["n_conn_state"]
             @test all(conn.params .>= -1.0)
             @test all(conn.params .<= 1.0)
             @test length(conn.params) == m.cfg["n_conn_params"]
-            @test conn.source[] === cell
-            @test conn.dest[] in m.cells
+            @test conn.source[] == cell
+            if typeof(conn.dest[]) == Cell
+                @test conn.dest[] in m.cells
+            else
+                in_conns = false
+                for c2 in m.cells
+                    if conn.dest[] in c2.conns
+                        in_conns = true
+                        break
+                    end
+                end
+                @test in_conns
+            end
         end
     end
+    @test nconns <= m.cfg["conns_max"]
 end
 
 @testset "Initialization tests" begin
@@ -131,20 +145,24 @@ function controller_test(cont_constructor::Function; cfg::Dict=Config())
     end
 end
 
+@testset "Const controller" begin
+    controller_test(const_controller)
+end
+
 @testset "Random controller" begin
     controller_test(rand_controller)
 end
 
-@testset "Static controller" begin
-    controller_test(static_controller;
-                    cfg = Config(Config(), "cfg/static.yaml"))
-end
+# @testset "Static controller" begin
+#     controller_test(static_controller;
+#                     cfg = Config(Config(), "cfg/static.yaml"))
+# end
 
-@testset "SNN controller" begin
-    controller_test(snn_controller;
-                    cfg = Config(Config(), "cfg/snn.yaml"))
-end
+# @testset "SNN controller" begin
+#     controller_test(snn_controller;
+#                     cfg = Config(Config(), "cfg/snn.yaml"))
+# end
 
-@testset "CGP controller" begin
-    controller_test(cgp_controller)
-end
+# @testset "CGP controller" begin
+#     controller_test(cgp_controller)
+# end

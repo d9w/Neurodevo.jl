@@ -1,5 +1,4 @@
 seed: 0
-n_channels: 2
 n_cell_state: 5
 n_cell_params: 5
 n_conn_state: 2
@@ -7,5 +6,6 @@ n_conn_params: 2
 T_learn: 1
 T_devo: 2
 cells_max: 100
+conns_max: 20000
 memory_max: 1073741824
 time_max: 10.0

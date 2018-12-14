@@ -1,12 +1,20 @@
 export Conn
 
-mutable struct Conn{T}
+abstract type Obj end
+
+mutable struct Conn <: Obj
+    input::Float64
+    output::Float64
     state::Array{Float64}
     params::Array{Float64}
-    source::Ref{T}
-    dest::Ref{T}
+    source::Ref
+    dest::Ref
 end
 
-function Conn{T}(cfg::Dict, source::T, dest::T, params::Array{Float64}) where T
-    Conn(zeros(cfg["n_conn_state"]), params, Ref(source), Ref(dest))
+function Conn(cfg::Dict, source::Obj, dest::Obj, params::Array{Float64})
+    Conn(0.0, 0.0, zeros(cfg["n_conn_state"]), params, Ref(source), Ref(dest))
+end
+
+function get_params(c::Conn, n::Int64)
+    vcat(c.params, zeros(n - length(c.params)))
 end

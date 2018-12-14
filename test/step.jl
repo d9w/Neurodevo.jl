@@ -1,6 +1,6 @@
 @testset "Step tests" begin
     cfg = Config()
-    ccon = rand() * 0.51 + 0.49
+    ccon = rand() * 0.49 + 0.51
     c = const_controller(cfg; c=ccon)
     m = Model(cfg, c)
     nin = rand(5:10)
@@ -11,16 +11,16 @@
         Neurodevo.update_cell_states!(m)
         for cell in m.cells
             @test all(cell.state .== ccon)
-            @test all(cell.outputs .== ccon)
-            @test all(cell.inputs .== 0.0)
+            @test cell.output == ccon
+            @test cell.input == 0.0
         end
     end
 
     @testset "Update conn state" begin
         Neurodevo.update_conn_states!(m)
         for cell in m.cells
-            @test all(cell.inputs .<= 1.0)
-            @test all(cell.inputs .>= -1.0)
+            @test cell.input <= 1.0
+            @test cell.input >= -1.0
             for conn in cell.conns
                 @test all(conn.state .== ccon)
             end
@@ -56,9 +56,11 @@
 
     @testset "Connect cells" begin
         Neurodevo.connect_cells!(m)
+        nconns = 0
         for cell in m.cells
-            @test length(cell.conns) == length(m.cells)
+            nconns += length(cell.conns)
         end
+        @test nconns <= m.cfg["conns_max"]
     end
 
     @testset "Disconnect cells" begin

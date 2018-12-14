@@ -40,10 +40,9 @@ function test_controller(cfg::Dict, c::Controller)
     end
 
     @testset "Cell state update" begin
-        outs = c.cell_state_update(
-            vcat(cell_params(), cell_state(), scale(rand(cfg["n_channels"]))))
+        outs = c.cell_state_update(vcat(cell_params(), cell_state(), rand()))
         @test typeof(outs) == Array{Float64,1}
-        @test length(outs) == cfg["n_cell_state"] + cfg["n_channels"]
+        @test length(outs) == cfg["n_cell_state"] + 1
         test_domain(outs)
     end
 
@@ -55,13 +54,13 @@ function test_controller(cfg::Dict, c::Controller)
     end
 
     @testset "Connect" begin
-        outs = c.connect(vcat(cell_params(), cell_params()))
+        outs = c.connect(vcat(cell_params(), cell_params(), rand()))
         @test typeof(outs) == Bool
         @test length(outs) == 1
     end
 
     @testset "New conn params" begin
-        outs = c.new_conn_params(vcat(cell_params(), cell_params()))
+        outs = c.new_conn_params(vcat(cell_params(), cell_params(), rand()))
         @test typeof(outs) == Array{Float64,1}
         @test length(outs) == cfg["n_conn_params"]
         test_domain(outs)
@@ -75,10 +74,9 @@ function test_controller(cfg::Dict, c::Controller)
     end
 
     @testset "Conn state update" begin
-        outs = c.conn_state_update(
-            vcat(conn_params(), conn_state(), scale(rand(cfg["n_channels"]))))
+        outs = c.conn_state_update(vcat(conn_params(), conn_state(), rand(2)))
         @test typeof(outs) == Array{Float64,1}
-        @test length(outs) == cfg["n_conn_state"] + cfg["n_channels"]
+        @test length(outs) == cfg["n_conn_state"] + 1
         test_domain(outs)
     end
 
@@ -103,24 +101,29 @@ end
     test_controller(cfg, c)
 end
 
-@testset "Static controller" begin
-    cfg = Config(Config(), "cfg/static.yaml")
-    c = static_controller(cfg)
-    test_controller(cfg, c)
-end
-
-@testset "SNN controller" begin
-    cfg = Config(Config(), "cfg/snn.yaml")
-    c = snn_controller(cfg)
-    test_controller(cfg, c)
-end
-
-@testset "CGP controller" begin
-    include("../evo/cgp.jl")
+@testset "Const controller" begin
     cfg = Config()
-    c = cgp_controller(cfg)
+    c = const_controller(cfg)
     test_controller(cfg, c)
 end
 
+# @testset "Static controller" begin
+#     cfg = Config(Config(), "cfg/static.yaml")
+#     c = static_controller(cfg)
+#     test_controller(cfg, c)
+# end
+
+# @testset "SNN controller" begin
+#     cfg = Config(Config(), "cfg/snn.yaml")
+#     c = snn_controller(cfg)
+#     test_controller(cfg, c)
+# end
+
+# @testset "CGP controller" begin
+#     include("../evo/cgp.jl")
+#     cfg = Config()
+#     c = cgp_controller(cfg)
+#     test_controller(cfg, c)
+# end
 
 nothing
