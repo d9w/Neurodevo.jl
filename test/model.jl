@@ -1,4 +1,4 @@
-function test_model(m::Model, nin::Int64, nout::Int64, nhidden::Int64)
+function test_model(m::Model)
     @test length(m.cells) <= m.cfg["cells_max"]
     nconns = 0
     for cell in m.cells
@@ -49,25 +49,25 @@ end
     @testset "Layered" begin
         m = Model(cfg, c)
         layered_init!(m, nin, nout)
-        test_model(m, nin, nout, nin)
+        test_model(m)
     end
 
     @testset "Layered single cell" begin
         m = Model(cfg, c)
         layered_init!(m, nin, nout; nhidden=1)
-        test_model(m, nin, nout, 1)
+        test_model(m)
     end
 
     @testset "Random cell" begin
         m = Model(cfg, c)
         random_init!(m, nin, nout)
-        test_model(m, nin, nout, nin)
+        test_model(m)
     end
 
     @testset "Random single cell" begin
         m = Model(cfg, c)
         random_init!(m, nin, nout; nhidden=1)
-        test_model(m, nin, nout, 1)
+        test_model(m)
     end
 end
 
@@ -77,47 +77,48 @@ end
     m = Model(cfg, c)
     nin = rand(5:10)
     nout = rand(5:10)
-    nhidden = nin
+    nhidden = rand(5:10)
+    nreward = rand(5:10)
 
     @testset "Initialize" begin
-        random_init!(m, nin, nout)
-        test_model(m, nin, nout, nin)
-        @test length(m.cells) == nin + nout + nhidden
+        random_init!(m, nin, nout; nhidden=nhidden, nreward=nreward)
+        test_model(m)
+        @test length(m.cells) == nin + nout + nhidden + nreward
         @test length(m.inputs) == nin
         @test length(m.outputs) == nout
     end
 
     @testset "Input" begin
         set_input!(m, rand(nin))
-        test_model(m, nin, nout, nin)
+        test_model(m)
     end
 
     @testset "Step" begin
         for i in 1:5
             step!(m)
-            test_model(m, nin, nout, nin)
+            test_model(m)
         end
     end
 
     @testset "Output" begin
         outputs = get_output(m)
-        test_model(m, nin, nout, nin)
+        test_model(m)
         @test all(outputs .>= -1.0)
         @test all(outputs .<= 1.0)
         @test length(outputs) == nout
     end
 
     @testset "Reward" begin
-        reward!(m, rand(nout))
-        test_model(m, nin, nout, nin)
+        reward!(m, rand(nreward))
+        test_model(m)
     end
 
     @testset "Full step" begin
         for i in 1:5
             println("Base controller step $i")
             @time outputs = step!(m, rand(nin))
-            reward!(m, rand(nout))
-            test_model(m, nin, nout, nin)
+            reward!(m, rand(nreward))
+            test_model(m)
             @test all(outputs .>= -1.0)
             @test all(outputs .<= 1.0)
             @test length(outputs) == nout
@@ -130,19 +131,23 @@ function controller_test(cont_constructor::Function; cfg::Dict=Config())
     m = Model(cfg, c)
     nin = rand(5:10)
     nout = rand(5:10)
-    random_init!(m, nin, nout)
+    random_init!(m, nin, nout; nreward=nout)
 
     @testset "Full step" begin
         for i in 1:5
             println(string(cont_constructor, " step ", i))
             @time outputs = step!(m, rand(nin))
             reward!(m, rand(nout))
-            test_model(m, nin, nout, nin)
+            test_model(m)
             @test all(outputs .>= -1.0)
             @test all(outputs .<= 1.0)
             @test length(outputs) == nout
         end
     end
+end
+
+@testset "Default controller" begin
+    controller_test(x->Controller(x))
 end
 
 @testset "Const controller" begin

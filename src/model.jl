@@ -6,6 +6,7 @@ struct Model
     cells::Array{Cell}
     inputs::Array{Ref{Cell}}
     outputs::Array{Ref{Cell}}
+    rewards::Array{Ref{Cell}}
     state::Array{Int64}
 end
 
@@ -13,8 +14,9 @@ function Model(cfg::Dict, cont::Controller)
     cells = Array{Cell}(undef, 0)
     inputs = Array{Ref{Cell}}(undef, 0)
     outputs = Array{Ref{Cell}}(undef, 0)
+    rewards = Array{Ref{Cell}}(undef, 0)
     state = zeros(1)
-    Model(cfg, cont, cells, inputs, outputs, state)
+    Model(cfg, cont, cells, inputs, outputs, rewards, state)
 end
 
 function set_input!(m::Model, inputs::Array{Float64})
@@ -29,10 +31,9 @@ function get_output(m::Model)
 end
 
 function reward!(m::Model, reward::Array{Float64})
-    # TODO: specific reward cells
-    # for i in eachindex(reward)
-    #     m.outputs[i][].inputs[2] = reward[i]
-    # end
+    for i in eachindex(reward)
+        m.rewards[i][].input = reward[i]
+    end
     nothing
 end
 
