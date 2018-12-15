@@ -9,7 +9,7 @@ end
 
 function NeurodevoInd(cfg::Dict)
     neuro_cfg = Config(["cfg/evo.yaml", "cfg/snn.yaml"])
-    chromos = make_chromos!(neuro_cfg; cinds=[1 2 3 6 7 8])
+    chromos = make_chromos!(neuro_cfg)
     genes = Array{Array{Float64}}(undef, length(chromos))
     for i in eachindex(chromos)
         genes[i] = chromos[i].genes

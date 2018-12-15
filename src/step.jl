@@ -1,4 +1,4 @@
-export step!
+export step!, develop!
 
 function update_cell_states!(m::Model)
     for cell in m.cells
@@ -196,4 +196,10 @@ function step!(m::Model, inputs::Array{Float64})
     set_input!(m, inputs)
     step!(m)
     get_output(m)
+end
+
+function develop!(m::Model)
+    for i in 1:m.cfg["init_devo"]
+        step!(m)
+    end
 end

@@ -168,6 +168,6 @@ end
 #                     cfg = Config(Config(), "cfg/snn.yaml"))
 # end
 
-# @testset "CGP controller" begin
-#     controller_test(cgp_controller)
-# end
+@testset "CGP controller" begin
+    controller_test(cgp_controller)
+end

@@ -5,6 +5,7 @@ n_conn_state: 2
 n_conn_params: 2
 T_learn: 1
 T_devo: 2
+init_devo: 200
 cells_max: 100
 conns_max: 20000
 memory_max: 1073741824
