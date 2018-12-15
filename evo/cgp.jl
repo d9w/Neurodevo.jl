@@ -50,9 +50,8 @@ end
 function cgp_cfg(cfg::Dict, genes::Array{Float64})
     cfg["T_learn"] = max(5, round(Int64, genes[1] * 10) * 5)
     cfg["T_devo"] = max(5, round(Int64, genes[2] * 10) * 5)
-    cfg["init_devo"] = round(Int64, genes[3] * 10) * 5
-    cfg["init_method"] = round(genes[4])
-    cfg["nhidden"] = round(Int64, genes[5] * 10) * 2
+    cfg["init_method"] = round(genes[3])
+    cfg["nhidden"] = round(Int64, genes[4] * 10) * 2
     cfg
 end
 
