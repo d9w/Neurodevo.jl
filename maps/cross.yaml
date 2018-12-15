@@ -1,0 +1,23 @@
+width: 7
+height: 7
+objects:
+  - {type: wall, color: black, x: 3, y: 1}
+  - {type: wall, color: black, x: 5, y: 1}
+  - {type: wall, color: black, x: 3, y: 2}
+  - {type: wall, color: black, x: 5, y: 2}
+  - {type: wall, color: black, x: 1, y: 3}
+  - {type: wall, color: black, x: 2, y: 3}
+  - {type: wall, color: black, x: 3, y: 3}
+  - {type: wall, color: black, x: 5, y: 3}
+  - {type: wall, color: black, x: 6, y: 3}
+  - {type: wall, color: black, x: 7, y: 3}
+  - {type: wall, color: black, x: 1, y: 5}
+  - {type: wall, color: black, x: 2, y: 5}
+  - {type: wall, color: black, x: 3, y: 5}
+  - {type: wall, color: black, x: 5, y: 5}
+  - {type: wall, color: black, x: 6, y: 5}
+  - {type: wall, color: black, x: 7, y: 5}
+  - {type: wall, color: black, x: 3, y: 6}
+  - {type: wall, color: black, x: 5, y: 6}
+  - {type: wall, color: black, x: 3, y: 7}
+  - {type: wall, color: black, x: 5, y: 7}
