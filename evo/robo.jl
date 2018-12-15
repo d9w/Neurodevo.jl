@@ -22,7 +22,7 @@ function NeurodevoInd(cfg::Dict)
     neuro_cfg = Config("cfg/evo.yaml")
     chromos = make_chromos!(neuro_cfg)
     genes = Array{Array{Float64}}(undef, 0)
-    push!(genes, rand(6))
+    push!(genes, rand(5))
     for c in chromos
         push!(genes, c.genes)
     end
@@ -59,9 +59,6 @@ end
 
 function robo_controller(m::Model, inputs::Array{Float64})
     Neurodevo.reward!(m, [inputs[1]])
-    for i in 1:(m.cfg["n_repeat"]-1)
-        Neurodevo.step!(m, inputs[2:end])
-    end
     Neurodevo.step!(m, inputs[2:end])
 end
 
