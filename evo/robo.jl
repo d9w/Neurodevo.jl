@@ -22,7 +22,7 @@ function NeurodevoInd(cfg::Dict)
     neuro_cfg = Config("cfg/evo.yaml")
     chromos = make_chromos!(neuro_cfg)
     genes = Array{Array{Float64}}(undef, 0)
-    push!(genes, rand(4))
+    push!(genes, rand(5))
     for c in chromos
         push!(genes, c.genes)
     end
@@ -47,8 +47,7 @@ function uniform_mutation(parent::NeurodevoInd; m_rate=0.1)
 end
 
 function generation(e::Evolution)
-    fits = [RoboGrid.coverage_fitness, RoboGrid.water_search_fitness,
-            RoboGrid.water_memorize_fitness, RoboGrid.cross_search_fitness,
+    fits = [RoboGrid.coverage_fitness, RoboGrid.water_memorize_fitness,
             RoboGrid.cross_memorize_fitness, RoboGrid.cross_strategy_fitness]
     for i in e.population
         i.seed = floor(Int64, (e.gen - 1) / 10)
@@ -73,6 +72,7 @@ function robo_eval(ind::Individual)
     else
         layered_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
     end
+    develop!(m)
     f(x::Array{Float64}) = robo_controller(m, x)
     [ind.func(f; seed=ind.seed)]
 end
