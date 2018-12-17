@@ -5,3 +5,5 @@ n_conn_state: 2
 n_conn_params: 2
 cells_max: 100
 conns_max: 20000
+memory_max: 1073741824
+time_max: 10.0

@@ -3,16 +3,19 @@ include("darwin.jl")
 include("data.jl")
 
 function evaluation(ind::NeurodevoInd)
+    cfg = cgp_cfg(Config("cfg/evo.yaml"), ind.genes[1])
+    c = cgp_controller(cfg, ind.genes[2:end])
+    m = Model(cfg, c)
+
     X, Y = get_iris()
     nin = size(X, 1)
     nout = length(unique(Y))
-
-    cfg = Config(["cfg/evo.yaml", "cfg/snn.yaml"])
-    c = cgp_controller(cfg, ind.genes; cinds=[1 2 3 6 7 8])
-    m = Model(cfg, c)
-    layered_init!(m, nin, nout)
-    for i in 1:m.cfg["T_devo"]
-        Neurodevo.step!(m)
+    layered_init!(m, nin, nout; nhidden=nin, nreward=1)
+    if cfg["init_method"] == 0
+        random_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
+    else
+        layered_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
     end
+    develop!(m)
     classify(m, X, Y, ind.fitness)
 end

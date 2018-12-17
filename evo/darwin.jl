@@ -8,11 +8,12 @@ struct NeurodevoInd <: Individual
 end
 
 function NeurodevoInd(cfg::Dict)
-    neuro_cfg = Config(["cfg/evo.yaml", "cfg/snn.yaml"])
+    neuro_cfg = Config("cfg/evo.yaml")
     chromos = make_chromos!(neuro_cfg)
-    genes = Array{Array{Float64}}(undef, length(chromos))
-    for i in eachindex(chromos)
-        genes[i] = chromos[i].genes
+    genes = Array{Array{Float64}}(undef, 0)
+    push!(genes, rand(5))
+    for c in chromos
+        push!(genes, c.genes)
     end
     fitness = -Inf*ones(cfg["n_fitness"])
     NeurodevoInd(genes, fitness)

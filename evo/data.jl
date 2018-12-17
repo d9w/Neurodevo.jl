@@ -38,6 +38,9 @@ function classify(m::Model, X::Array{Float64}, Y::Array{Int64},
         for i in eachindex(Y)
             outputs, t, bytes, gctime, memallocs = @timed Neurodevo.step!(m, X[:, i])
             labels[i] = argmax(outputs)
+            if labels[i] == Y[i]
+                Neurodevo.reward!(m, [1.0])
+            end
             total_time += t
             total_memory += bytes
             if (total_time >= m.cfg["time_max"] ||
