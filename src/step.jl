@@ -173,7 +173,7 @@ function clean_connections!(m::Model)
 end
 
 function step!(m::Model)
-    t = m.state[1]
+    t = m.state[1] + 1
     update_cell_states!(m)
     update_conn_states!(m)
     conn_communication!(m)
@@ -189,6 +189,7 @@ function step!(m::Model)
             clean_connections!(m)
         end
     end
+    m.state[1] = t
     nothing
 end
 
@@ -200,6 +201,16 @@ end
 
 function develop!(m::Model)
     for i in 1:m.cfg["init_devo"]
-        step!(m)
+        update_cell_states!(m)
+        update_conn_states!(m)
+        conn_communication!(m)
+        update_params!(m)
+        add_cells!(m)
+        connect_cells!(m)
+        d1 = remove_cells!(m)
+        d2 = disconnect_cells!(m)
+        if (d1 || d2)
+            clean_connections!(m)
+        end
     end
 end

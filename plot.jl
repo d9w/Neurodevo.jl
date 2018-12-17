@@ -61,14 +61,14 @@ end
 function plot_all()
     res = get_evolution("results/88778/evolution.log", id="CGP",
                         goalgen=100)
-    res = vcat(res, get_evolution("results/88779/evolution.log", id="Nd",
+    res = vcat(res, get_evolution("results/88779/evolution.log", id="Neurodevo",
                                   goalgen=100))
     plot_evolution(res; filename="evolution_100.pdf")
 
     res = get_evolution("results/88794/evolution.log",
                         id="CGP", goalgen=10)
     res = vcat(res, get_evolution("results/88796/evolution.log",
-                                  id="Nd", goalgen=10))
+                                  id="Neurodevo", goalgen=10))
     plot_evolution(res; filename="evolution_10.pdf")
 end
 

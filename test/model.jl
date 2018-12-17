@@ -96,6 +96,7 @@ end
     @testset "Step" begin
         for i in 1:5
             step!(m)
+            @test m.state[1] == i
             test_model(m)
         end
     end
