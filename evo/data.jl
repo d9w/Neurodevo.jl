@@ -1,31 +1,9 @@
-using DataFrames
-using RDatasets
 using Neurodevo
 using Random
 
-function col_normalize(X::Array{Float64})
-    xmin = minimum(X, dims=1)
-    xmax = maximum(X, dims=1)
-    for i in 1:size(X, 2)
-        X[:, i] = (X[:, i] .- xmin[i]) ./ (xmax[i] - xmin[i])
-    end
-    Array{Float64}(X')
-end
-
-function get_iris()
-    iris = dataset("datasets", "iris")
-
-    iris_data = Array{Float64}(hcat(iris[:SepalLength], iris[:SepalWidth],
-                                    iris[:PetalWidth], iris[:PetalLength]));
-    X = col_normalize(iris_data)
-
-    sps = unique(iris[:Species])
-    iris[:label] = indexin(iris[:Species], sps)
-    Y = Array{Int64}(iris[:label])
-    rng = MersenneTwister(1234)
-    inds = randperm(rng, length(Y))
-    X[:, inds], Y[inds]
-end
+include("cgp.jl")
+include("darwin.jl")
+include("datasets.jl")
 
 function classify(m::Model, X::Array{Float64}, Y::Array{Int64},
                   pfits::Array{Float64})
@@ -60,3 +38,33 @@ function classify(m::Model, X::Array{Float64}, Y::Array{Int64},
     new_fits
 end
 
+function data_evaluation(ind::NeurodevoInd)
+    cfg = cgp_cfg(Config("cfg/evo.yaml"), ind.genes[1])
+    c = cgp_controller(cfg, ind.genes[2:end])
+    m = Model(cfg, c)
+
+    X, Y = ind.func(ind.seed)
+    nin = size(X, 1)
+    nout = length(unique(Y))
+    layered_init!(m, nin, nout; nhidden=nin, nreward=1)
+    if cfg["init_method"] == 0
+        random_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
+    else
+        layered_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
+    end
+    develop!(m)
+    classify(m, X, Y, ind.fitness)
+end
+
+function NeurodevoInd(genes::Array{Array{Float64}}, fitness::Array{Float64})
+    NeurodevoInd(genes, fitness, get_iris, 1)
+end
+
+function generation(e::Evolution)
+    fits = [get_iris, get_diabetes, get_glass]
+    for i in e.population
+        i.seed = floor(Int64, (e.gen - 1) / 10)
+        func = mod(floor(Int64, (e.gen - 1) / e.cfg["goal_gen"]), length(fits)) + 1
+        i.func = fits[func]
+    end
+end

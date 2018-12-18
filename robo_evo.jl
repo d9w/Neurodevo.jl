@@ -17,6 +17,7 @@ ArgParse.@add_arg_table(
 args = ArgParse.parse_args(s)
 cfg = YAML.load_file(args["cfg"])
 cfg["seed"] = args["seed"]
+cfg["n_fitness"] = 1
 
 e = Evolution(NeurodevoInd, cfg; id=args["id"], logfile=args["log"])
 e.mutation = uniform_mutation

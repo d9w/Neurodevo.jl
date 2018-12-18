@@ -2,9 +2,11 @@ using Darwin
 import Darwin: uniform_mutation
 import Base.isless
 
-struct NeurodevoInd <: Individual
+mutable struct NeurodevoInd <: Individual
     genes::Array{Array{Float64}}
     fitness::Array{Float64}
+    func::Function
+    seed::Int64
 end
 
 function NeurodevoInd(cfg::Dict)
@@ -20,7 +22,11 @@ function NeurodevoInd(cfg::Dict)
 end
 
 function isless(i1::NeurodevoInd, i2::NeurodevoInd)
-    maximum(i1.fitness) .< maximum(i2.fitness)
+    minimum(i1.fitness) < minimum(i2.fitness)
+end
+
+function json(i::NeurodevoInd)
+    json(Dict("genes"=>i.genes, "fitness"=>i.fitness))
 end
 
 function uniform_mutation(parent::NeurodevoInd; m_rate=0.1)
