@@ -2,6 +2,15 @@ using ArgParse
 using YAML
 using Distributed
 
+const IN_SLURM = "SLURM_JOBID" in keys(ENV)
+IN_SLURM && using ClusterManagers
+
+if IN_SLURM
+    pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
+else
+    pids = addprocs()
+end
+
 @everywhere include("evo/data.jl")
 
 s = ArgParse.ArgParseSettings()
