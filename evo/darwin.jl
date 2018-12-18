@@ -1,6 +1,7 @@
 using Darwin
 import Darwin: uniform_mutation
 import Base.isless
+import JSON.json
 
 mutable struct NeurodevoInd <: Individual
     genes::Array{Array{Float64}}
