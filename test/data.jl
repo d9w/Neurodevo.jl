@@ -7,10 +7,6 @@ function test_classification(cont_constructor::Function; cfg::Dict=Config())
     nin = size(X, 1)
     nout = length(unique(Y))
     layered_init!(m, nin, nout; nhidden=1, nreward=0)
-    for i in 1:m.cfg["T_devo"]
-        step!(m)
-    end
-
     pfits = zeros(5)
     fitness = classify(m, X, Y, pfits)
     println(fitness)

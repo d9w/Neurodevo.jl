@@ -107,11 +107,11 @@ end
     test_controller(cfg, c)
 end
 
-# @testset "Static controller" begin
-#     cfg = Config(Config(), "cfg/static.yaml")
-#     c = static_controller(cfg)
-#     test_controller(cfg, c)
-# end
+@testset "Static controller" begin
+    cfg = Config(Config())
+    c = static_controller(cfg)
+    test_controller(cfg, c)
+end
 
 # @testset "SNN controller" begin
 #     cfg = Config(Config(), "cfg/snn.yaml")

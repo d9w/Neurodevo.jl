@@ -159,10 +159,10 @@ end
     controller_test(rand_controller)
 end
 
-# @testset "Static controller" begin
-#     controller_test(static_controller;
-#                     cfg = Config(Config(), "cfg/static.yaml"))
-# end
+@testset "Static controller" begin
+    controller_test(static_controller;
+                    cfg = Config(Config()))
+end
 
 # @testset "SNN controller" begin
 #     controller_test(snn_controller;
