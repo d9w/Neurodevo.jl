@@ -3,6 +3,7 @@ n_cell_state: 5
 n_cell_params: 5
 n_conn_state: 2
 n_conn_params: 2
+n_epochs: 5
 cells_max: 100
 conns_max: 20000
 memory_max: 1073741824

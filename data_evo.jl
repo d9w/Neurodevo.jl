@@ -2,14 +2,13 @@ using ArgParse
 using YAML
 using Distributed
 
-const IN_SLURM = "SLURM_JOBID" in keys(ENV)
-IN_SLURM && using ClusterManagers
-
-if IN_SLURM
-    pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
-else
-    pids = addprocs()
-end
+# const IN_SLURM = "SLURM_JOBID" in keys(ENV)
+# IN_SLURM && using ClusterManagers
+# if IN_SLURM
+#     pids = addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
+# else
+#     pids = addprocs()
+# end
 
 @everywhere include("evo/data.jl")
 
@@ -26,9 +25,10 @@ ArgParse.@add_arg_table(
 args = ArgParse.parse_args(s)
 cfg = YAML.load_file(args["cfg"])
 cfg["seed"] = args["seed"]
-cfg["n_fitness"] = 10
+cfg["n_fitness"] = 1
 
 e = Evolution(NeurodevoInd, cfg; id=args["id"], logfile=args["log"])
 e.mutation = uniform_mutation
 e.evaluation = data_evaluation
+e.generation = generation
 run!(e)

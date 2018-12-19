@@ -5,13 +5,11 @@ include("cgp.jl")
 include("darwin.jl")
 include("datasets.jl")
 
-function classify(m::Model, X::Array{Float64}, Y::Array{Int64},
-                  pfits::Array{Float64})
-    base_fit = pfits[1]
-    new_fits = zeros(length(pfits))
+function classify(m::Model, X::Array{Float64}, Y::Array{Int64})
     total_time = 0
     total_memory = 0
-    for epoch in eachindex(pfits)
+    fit = 0.0
+    for epoch in 1:m.cfg["n_epochs"]
         labels = zeros(Int64, length(Y))
         for i in eachindex(Y)
             outputs, t, bytes, gctime, memallocs = @timed Neurodevo.step!(m, X[:, i])
@@ -23,19 +21,12 @@ function classify(m::Model, X::Array{Float64}, Y::Array{Int64},
             total_memory += bytes
             if (total_time >= m.cfg["time_max"] ||
                 total_memory >= m.cfg["memory_max"])
-                break
+                return [fit - 1.0]
             end
         end
         fit = sum(labels .== Y) / length(Y)
-        new_fits[epoch] = fit
-        base_fit = fit
-        if (fit < pfits[epoch] || fit < base_fit ||
-            total_time >= m.cfg["time_max"] ||
-            total_memory >= m.cfg["memory_max"])
-            break
-        end
     end
-    new_fits
+    [fit]
 end
 
 function data_evaluation(ind::NeurodevoInd)
@@ -46,14 +37,13 @@ function data_evaluation(ind::NeurodevoInd)
     X, Y = ind.func(ind.seed)
     nin = size(X, 1)
     nout = length(unique(Y))
-    layered_init!(m, nin, nout; nhidden=nin, nreward=1)
     if cfg["init_method"] == 0
         random_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
     else
         layered_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
     end
     develop!(m)
-    classify(m, X, Y, ind.fitness)
+    classify(m, X, Y)
 end
 
 function NeurodevoInd(genes::Array{Array{Float64}}, fitness::Array{Float64})
