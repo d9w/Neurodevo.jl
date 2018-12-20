@@ -14,7 +14,7 @@ function NeurodevoInd(cfg::Dict)
     neuro_cfg = Config("cfg/evo.yaml")
     chromos = make_chromos!(neuro_cfg)
     genes = Array{Array{Float64}}(undef, 0)
-    push!(genes, rand(5))
+    push!(genes, rand(4))
     for c in chromos
         push!(genes, c.genes)
     end

@@ -1,27 +1,25 @@
 include("../evo/data.jl")
 
-function test_classification(cont_constructor::Function; cfg::Dict=Config())
+function test_classification(cont_constructor::Function;
+                             cfg::Dict=Config())
     c = cont_constructor(cfg)
     m = Model(cfg, c)
-    X, Y = get_iris()
+    X, Y = get_iris(0)
     nin = size(X, 1)
     nout = length(unique(Y))
-    layered_init!(m, nin, nout; nhidden=1, nreward=0)
-    pfits = zeros(5)
-    fitness = classify(m, X, Y, pfits)
+    layered_init!(m, nin, nout; nhidden=nin, nreward=1)
+    fitness = classify(m, X, Y)
     println(fitness)
-    @test fitness[1] >= 0.0
-    @test length(fitness) == length(pfits)
+    @test fitness[1] >= -1.0
 end
 
-@testset "Random controller" begin
-    test_classification(rand_controller)
-end
-
-# @testset "Static controller" begin
-#     test_classification(static_controller;
-#                         cfg = Config(Config(), "cfg/static.yaml"))
+# @testset "Random controller" begin
+#     test_classification(rand_controller)
 # end
+
+@testset "Static controller" begin
+    test_classification(static_controller; cfg = Config(Config()))
+end
 
 # @testset "SNN controller" begin
 #     test_classification(snn_controller;

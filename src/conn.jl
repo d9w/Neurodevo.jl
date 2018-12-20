@@ -1,4 +1,5 @@
 export Conn
+import Base.show
 
 abstract type Obj end
 
@@ -17,4 +18,9 @@ end
 
 function get_params(c::Conn, n::Int64)
     vcat(c.params, zeros(n - length(c.params)))
+end
+
+function show(io::IO, x::Conn)
+    print(io, string("Conn(", x.input, ", ", x.output, ", ", x.state, ", ",
+                     x.params, ", ", x.source[].params, ", ", x.dest[].params, ")"));
 end

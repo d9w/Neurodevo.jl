@@ -13,13 +13,17 @@ function classify_performance(m::Model, X::Array{Float64}, Y::Array{Int64},
                               dataset::String, seed::Int64)
     total_time = 0
     total_memory = 0
+    nout = length(unique(Y))
     df = DataFrame(seed=Int[], dataset=String[], epoch=Int[], index=Int[], label=Int[],
                    guess=Int[], certainty=Float64[], correct=Int[])
     for epoch in 1:m.cfg["n_epochs"]
         labels = zeros(Int64, length(Y))
         correct = 0
         for i in eachindex(Y)
-            outputs, t, bytes, gctime, memallocs = @timed Neurodevo.step!(m, X[:, i])
+            outputs = zeros(nout)
+            for s in 1:m.cfg["n_step"]
+                outputs, t, bytes, gctime, memallocs = @timed Neurodevo.step!(m, X[:, i])
+            end
             labels[i] = argmax(outputs)
             if labels[i] == Y[i]
                 correct += 1
@@ -41,13 +45,7 @@ function get_performance(ind::NeurodevoInd)
     nin = size(X, 1)
     nout = length(unique(Y))
     nsample = length(Y)
-    layered_init!(m, nin, nout; nhidden=nin, nreward=1)
-    if cfg["init_method"] == 0
-        random_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
-    else
-        layered_init!(m, nin, nout; nreward=1, nhidden=cfg["nhidden"])
-    end
-    develop!(m)
+    layered_init!(m, nin, nout; nreward=1, nhidden=cfg["n_hidden"])
     df = classify_performance(m, X, Y, String(split(repr(ind.func), "_")[2]),
                               ind.seed)
     df[:step] = df[:index] + (df[:epoch] .- 1) * nsample
@@ -57,7 +55,7 @@ end
 
 function plot_performance(res::DataFrame; title="Training accuracy",
                           filename="training.pdf")
-    plt = plot(res, x=:step, y=:accuracy, color=:epoch,
+    plt = plot(res, x=:index, y=:accuracy, color=:epoch,
                Geom.smooth,
                Guide.xlabel("Step"),
                Guide.ylabel("Accuracy"),
@@ -67,24 +65,25 @@ function plot_performance(res::DataFrame; title="Training accuracy",
 end
 
 function plot_all_data(ind::NeurodevoInd, id::String)
+    ind.func = get_iris
     res = get_performance(ind)
-    plot_performance(res; title="Iris training accuracy",
+    plot_performance(res; title="Iris training",
                      filename=string(id, "_iris_training.pdf"))
-    ind.func = get_diabetes
-    res = get_performance(ind)
-    plot_performance(res; title="Diabetes training accuracy",
-                     filename=string(id, "_diabetes_training.pdf"))
-    ind.func = get_glass
-    res = get_performance(ind)
-    plot_performance(res; title="Glass training accuracy",
-                     filename=string(id, "_glass_training.pdf"))
+    # ind.func = get_diabetes
+    # res = get_performance(ind)
+    # plot_performance(res; title="Diabetes training",
+    #                  filename=string(id, "_diabetes_training.pdf"))
+    # ind.func = get_glass
+    # res = get_performance(ind)
+    # plot_performance(res; title="Glass training",
+    #                  filename=string(id, "_glass_training.pdf"))
 end
 
 function plot_all()
     ind = get_individual("gens/1/1000/0100.dna")
     plot_all_data(ind, "1_1000")
-    ind = get_individual("gens/1/2000/0100.dna")
-    plot_all_data(ind, "1_2000")
-    ind = get_individual("gens/89462/1000/0100.dna")
-    plot_all_data(ind, "89462")
+    # ind = get_individual("gens/1/2000/0100.dna")
+    # plot_all_data(ind, "1_2000")
+    # ind = get_individual("gens/89462/1000/0100.dna")
+    # plot_all_data(ind, "89462")
 end
