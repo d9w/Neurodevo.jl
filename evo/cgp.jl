@@ -51,7 +51,7 @@ function cgp_cfg(cfg::Dict, genes::Array{Float64})
     cfg["T_learn"] = max(1, round(Int64, genes[1] * 5) * 5)
     cfg["T_devo"] = max(1, round(Int64, genes[2] * 5) * 5)
     cfg["n_hidden"] = round(Int64, genes[3] * 10) * 2
-    cfg["n_step"] = round(Int64, genes[4] * 10) * 2
+    cfg["n_step"] = max(1, round(Int64, genes[4] * 5))
     cfg
 end
 
