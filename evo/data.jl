@@ -32,7 +32,7 @@ end
 
 function data_evaluation(ind::NeurodevoInd)
     cfg = cgp_cfg(Config("cfg/evo.yaml"), ind.genes[1])
-    c = cgp_controller(cfg, ind.genes)
+    c = cgp_controller(cfg, ind.genes[2:end])
     m = Model(cfg, c)
 
     X, Y = ind.func(ind.seed)
